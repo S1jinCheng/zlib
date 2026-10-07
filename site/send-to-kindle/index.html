@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Send Books to Kindle from the Terminal — zlib</title>
-<meta name="description" content="Send EPUB, PDF, and DOCX files to a Kindle with one command. zlib mails them through your own SMTP server, so there is no upload step and no browser.">
+<title>Send Books to Kindle from the Terminal · zlib</title>
+<meta name="description" content="Send local books to Kindle with zlib. Configure your Kindle address and SMTP server, then send an EPUB, PDF, or DOCX file.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://zlib.heartleo.dev/send-to-kindle/">
 <meta property="og:type" content="article">
@@ -81,19 +81,6 @@
 .doc pre .p{color:var(--t-mauve)}
 .doc pre .c{color:var(--t-muted)}
 
-.tbl-scroll{overflow-x:auto;margin:1.4rem 0 0}
-table.doc-t{border-collapse:collapse;width:100%;font-size:.92rem;min-width:32rem}
-table.doc-t th,table.doc-t td{
-  text-align:left;padding:.62rem .8rem;border-bottom:1px solid var(--rule-soft);
-  vertical-align:top;
-}
-table.doc-t th{
-  font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--faint);font-weight:500;border-bottom-color:var(--rule);
-}
-table.doc-t td{color:var(--subtext)}
-table.doc-t td:first-child{color:var(--strong)}
-
 .faq{margin-top:1.4rem;border-top:1px solid var(--rule-soft)}
 .faq details{border-bottom:1px solid var(--rule-soft)}
 .faq summary{
@@ -105,11 +92,6 @@ table.doc-t td:first-child{color:var(--strong)}
 .faq details[open] summary::before{content:"−"}
 .faq details p{margin:0 0 1rem 1.6rem;font-size:.95rem}
 
-.callout{
-  border-left:2px solid var(--accent);background:var(--accent-wash);
-  border-radius:0 7px 7px 0;padding:.9rem 1.1rem;margin:1.4rem 0 0;
-}
-.callout p{margin:0;color:var(--subtext);font-size:.94rem}
 .crumb{
   font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;
   color:var(--faint);margin-bottom:1.1rem;
@@ -148,54 +130,23 @@ table.doc-t td:first-child{color:var(--strong)}
 <section class="wrap hero">
   <div class="doc">
     <p class="crumb"><a href="/">zlib</a> / send to kindle</p>
-    <h1>Send books to your Kindle from the terminal.</h1>
-    <p class="sub" style="margin-top:.9rem">
-      One command mails a file to your Kindle address through your own mail
-      server. No browser, no upload page, nothing to drag anywhere.
-    </p>
-
+    <h1>Send books to Kindle.</h1>
+    <p class="sub" style="margin-top:.9rem">Mail a local file to your Kindle address through your SMTP server. A Z-Library login is not required.</p>
     <div class="cmdline" style="margin-top:1.8rem">
-      <span class="p" aria-hidden="true">$</span>
-      <code>zlib kindle send ./dune.epub</code>
+      <span class="p" aria-hidden="true">$</span><code>zlib kindle send ./dune.epub</code>
       <button class="copy" type="button" data-copy="zlib kindle send ./dune.epub">copy</button>
-    </div>
-
-    <div class="meta">
-      <span><i></i>EPUB · PDF · DOCX · and more</span>
-      <span><i></i>Any SMTP server</span>
-      <span><i></i>Password never written to disk</span>
     </div>
   </div>
 </section>
 
-<!-- ── setup ───────────────────────────────────────────────── -->
 <section class="wrap band">
   <div class="doc">
-    <div class="eyebrow">$ zlib kindle</div>
-    <h2>Setting it up once</h2>
-    <p>
-      Amazon lets you mail documents to a Kindle, and it accepts mail only from
-      addresses you have approved. So the setup is two halves: tell zlib which
-      mail server to send through, and tell Amazon that server's address is
-      allowed to send to you.
-    </p>
-
+    <h2>Set up once</h2>
+    <p><a href="/#install">Install zlib</a>, then complete these steps.</p>
     <ol class="steps">
       <li>
-        <h3>Install zlib</h3>
-        <p>Homebrew, winget, <code>go install</code>, or a prebuilt binary from the releases page.</p>
-<pre><span class="p">$</span> brew install heartleo/tap/zlib</pre>
-      </li>
-
-      <li>
-        <h3>Point it at your mail server</h3>
-        <p>
-          Running <code>zlib kindle</code> with no arguments opens a short form:
-          your Kindle address, the address you are sending from, and the SMTP
-          host and port. It defaults to <code>smtp.gmail.com</code> on port
-          <code>587</code>. The answers are saved to
-          <code>~/.config/zlib/kindle.json</code>.
-        </p>
+        <h3>Configure the addresses and SMTP server</h3>
+        <p>Run <code>zlib kindle</code>. Enter your Kindle address, sender address, SMTP host, and port. The settings are saved in <code>~/.config/zlib/kindle.json</code>.</p>
 <pre><span class="p">$</span> zlib kindle
 
   Kindle address   you@kindle.com
@@ -203,235 +154,51 @@ table.doc-t td:first-child{color:var(--strong)}
   SMTP host        smtp.gmail.com
   SMTP port        587</pre>
       </li>
-
       <li>
-        <h3>Put the password in the environment</h3>
-        <p>
-          zlib reads the mail password from <code>ZLIB_SMTP_PWD</code> at send
-          time and never writes it to the config file. On Gmail this has to be
-          an App Password, which requires 2-step verification on the account;
-          your normal login password will be rejected by the server.
-        </p>
-<pre><span class="p">$</span> export ZLIB_SMTP_PWD=your-app-password</pre>
-        <div class="callout">
-          <p>
-            Putting it in your shell profile makes it permanent. Putting it in a
-            <code>.env</code> file next to the project also works, since zlib
-            reads <code>.env</code> from the working directory and from
-            <code>~/.config/zlib/</code>.
-          </p>
-        </div>
+        <h3>Set the SMTP password</h3>
+        <p>Edit <code>~/.config/zlib/.env</code> and add <code>ZLIB_SMTP_PWD=your-app-password</code>. For Gmail, use an <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener">App Password</a>.</p>
+        <p>Keep the password out of command history. zlib reads it when sending and does not write it to <code>kindle.json</code>.</p>
       </li>
-
       <li>
-        <h3>Approve the sender at Amazon</h3>
-        <p>
-          In your Amazon account, under Manage Your Content and Devices →
-          Preferences → Personal Document Settings, add your From address to the
-          Approved Personal Document E-mail List. Mail from anywhere else is
-          dropped silently, which is the usual reason a send looks like it
-          worked but nothing arrives.
-        </p>
-      </li>
-
-      <li>
-        <h3>Send something</h3>
-        <p>
-          Pass a path, or run it bare to get a file picker filtered to the
-          formats Amazon accepts.
-        </p>
-<pre><span class="p">$</span> zlib kindle send ./dune.epub
-<span class="c">  ✓ Sent dune.epub to you@kindle.com</span></pre>
+        <h3>Approve the sender in Amazon</h3>
+        <p>Open Manage Your Content and Devices → Preferences → Personal Document Settings. Find your Kindle address and add the sender to the approved email list.</p>
       </li>
     </ol>
+    <p>Send a file after setup:</p>
+<pre><span class="p">$</span> zlib kindle send ./dune.epub</pre>
   </div>
 </section>
 
-<!-- ── formats ─────────────────────────────────────────────── -->
 <section class="wrap band">
   <div class="doc">
-    <div class="eyebrow">what goes through</div>
-    <h2>Formats and size limits</h2>
-    <p>
-      zlib checks the file before it opens a connection, so a file Amazon would
-      reject fails immediately with a reason instead of vanishing into a
-      mailbox somewhere.
-    </p>
-
-    <div class="tbl-scroll">
-      <table class="doc-t">
-        <thead>
-          <tr><th>Check</th><th>Rule</th><th>Why</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Extension</td>
-            <td><code>.epub</code> <code>.pdf</code> <code>.txt</code> <code>.doc</code> <code>.docx</code> <code>.html</code> <code>.htm</code> <code>.rtf</code> <code>.jpg</code> <code>.jpeg</code> <code>.png</code> <code>.bmp</code> <code>.gif</code></td>
-            <td>Amazon's Send to Kindle accepts these and ignores the rest.</td>
-          </tr>
-          <tr>
-            <td>File size</td>
-            <td>200 MB</td>
-            <td>Amazon's own ceiling for a personal document.</td>
-          </tr>
-          <tr>
-            <td>Message size</td>
-            <td>25 MB, Gmail only</td>
-            <td>
-              Attachments are base64 encoded, which inflates them by about a
-              third, so a 19 MB book becomes a message over Gmail's limit. zlib
-              works this out up front when the host is Gmail.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="callout">
-      <p>
-        zlib does not convert between formats. If you need an unsupported format
-        turned into an EPUB first, convert it with something like Calibre and
-        send the result.
-      </p>
-    </div>
+    <h2>Send after downloading</h2>
+    <p>Use an ID from your search results. <code>--send-to-kindle</code> sends the file when the download finishes.</p>
+<pre><span class="p">$</span> zlib download 11735659:7659fb --send-to-kindle</pre>
+    <p style="margin-top:1rem">For the interactive picker, run <code>zlib search --send-to-kindle</code>. To re-download from history, use <code>zlib history --download ID --send-to-kindle</code>.</p>
+    <h3>Files accepted by zlib</h3>
+    <p>EPUB, PDF, TXT, DOC, DOCX, HTML/HTM, RTF, JPG/JPEG, PNG, BMP, GIF. Convert other formats before sending.</p>
+    <p>zlib rejects files over 200 MB. For Gmail hosts it also checks the estimated encoded message against 25 MB. Your provider may impose a lower limit.</p>
   </div>
 </section>
 
-<!-- ── inline ──────────────────────────────────────────────── -->
 <section class="wrap band">
   <div class="doc">
-    <div class="eyebrow">--send-to-kindle</div>
-    <h2>Skipping the second command</h2>
-    <p>
-      Every command that ends in a downloaded file takes
-      <code>--send-to-kindle</code>, which mails it on as soon as the download
-      lands. That works on <code>search</code>, <code>download</code>, and
-      <code>history</code>.
-    </p>
-<pre><span class="p">$</span> zlib download 12345678 --send-to-kindle
-<span class="p">$</span> zlib search "the dispossessed" --send-to-kindle
-<span class="p">$</span> zlib history --send-to-kindle</pre>
-    <p style="margin-top:1.2rem">
-      Because none of this needs a terminal UI, the same flags work inside a
-      script or a cron job.
-    </p>
-  </div>
-</section>
-
-<!-- ── vs calibre ──────────────────────────────────────────── -->
-<section class="wrap band">
-  <div class="doc">
-    <div class="eyebrow">alternatives</div>
-    <h2>How this compares to Calibre</h2>
-    <p>
-      Calibre is the usual answer to this problem and it is a good one. The two
-      tools solve different halves of it, and using both is reasonable.
-    </p>
-
-    <div class="tbl-scroll">
-      <table class="doc-t">
-        <thead>
-          <tr><th></th><th>zlib</th><th>Calibre</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Interface</td>
-            <td>One command, scriptable</td>
-            <td>Desktop app, plus a command-line suite</td>
-          </tr>
-          <tr>
-            <td>Format conversion</td>
-            <td>None</td>
-            <td>Extensive, and the main reason to reach for it</td>
-          </tr>
-          <tr>
-            <td>Library management</td>
-            <td>None</td>
-            <td>Full catalogue, metadata editing, covers</td>
-          </tr>
-          <tr>
-            <td>Mail transport</td>
-            <td>Your SMTP server, configured directly</td>
-            <td>Your SMTP server, configured in preferences</td>
-          </tr>
-          <tr>
-            <td>Runs headless</td>
-            <td>Yes, no display needed</td>
-            <td>Yes via <code>calibre-smtp</code>, though the GUI is the common path</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p style="margin-top:1.4rem">
-      The short version: if you need a file converted or a library organised,
-      use Calibre. If the file is already in a format Amazon takes and you want
-      it gone in one line, this is faster.
-    </p>
-  </div>
-</section>
-
-<!-- ── faq ─────────────────────────────────────────────────── -->
-<section class="wrap band">
-  <div class="doc">
-    <div class="eyebrow">questions</div>
-    <h2>Common problems</h2>
-
+    <h2>If sending fails</h2>
     <div class="faq">
       <details>
-        <summary>The command reports success but nothing reaches the Kindle.</summary>
-        <p>
-          Almost always the From address is not on Amazon's Approved Personal
-          Document E-mail List. Amazon accepts the mail and discards it without
-          telling the sender, so SMTP reports a clean delivery. Add the address
-          under Personal Document Settings and send again.
-        </p>
+        <summary>Sent successfully, but the book has not arrived.</summary>
+        <p>Check the Kindle address and Amazon's approved-sender list. SMTP success means the mail server accepted the message; it does not confirm Kindle delivery.</p>
       </details>
       <details>
-        <summary>Does zlib store my email password?</summary>
-        <p>
-          No. <code>~/.config/zlib/kindle.json</code> holds the addresses, host,
-          and port only. The password is read from the
-          <code>ZLIB_SMTP_PWD</code> environment variable each time a send runs.
-        </p>
+        <summary>SMTP rejects the password.</summary>
+        <p>Check the sender and <code>ZLIB_SMTP_PWD</code>. For Gmail, use an App Password. A working-directory <code>.env</code> can override the global file.</p>
       </details>
       <details>
-        <summary>Gmail rejects the login.</summary>
-        <p>
-          Gmail refuses account passwords over SMTP. Turn on 2-step verification,
-          generate an App Password, and use that as
-          <code>ZLIB_SMTP_PWD</code>.
-        </p>
-      </details>
-      <details>
-        <summary>Can I use a provider other than Gmail?</summary>
-        <p>
-          Yes. The host and port are whatever you enter, so any SMTP server
-          works. The 25 MB message check only applies when the host is Gmail;
-          other providers are held to Amazon's 200 MB file limit alone.
-        </p>
-      </details>
-      <details>
-        <summary>Where does the Kindle address come from?</summary>
-        <p>
-          Amazon assigns each device one, ending in <code>@kindle.com</code>. It
-          is listed beside the device under Manage Your Content and Devices.
-        </p>
+        <summary>The connection times out.</summary>
+        <p>Check the SMTP host, port, and network. <code>ZLIB_PROXY</code> applies to library requests, not SMTP.</p>
       </details>
     </div>
-  </div>
-</section>
-
-<!-- ── cta ─────────────────────────────────────────────────── -->
-<section class="wrap cta">
-  <h2>Get it installed.</h2>
-  <p>Free, MIT licensed, and it only ever talks to Z-Library and the SMTP server you configure.</p>
-  <div class="btns">
-    <a class="btn pri" href="/#install">Installation options</a>
-    <a class="btn" href="https://github.com/heartleo/zlib" target="_blank" rel="noopener">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-      Star on GitHub
-    </a>
+    <p style="margin-top:1.5rem"><a href="/#commands">CLI commands</a> · <a href="https://github.com/heartleo/zlib/issues" target="_blank" rel="noopener">Report an issue</a></p>
   </div>
 </section>
 

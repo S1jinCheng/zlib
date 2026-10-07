@@ -23,11 +23,11 @@ const ORIGIN = "https://zlib.heartleo.dev";
 
 // Chinese head copy. These mirror the zh strings already on the page rather
 // than introducing new wording.
-const ZH_TITLE = "zlib — 终端里的 Z-Library 客户端，也能交给 AI agent";
+const ZH_TITLE = "zlib · 终端里的 Z-Library 客户端，也能交给 AI agent";
 const ZH_DESCRIPTION =
-  "搜书、下载、发送到 Kindle，全程不用离开终端。开源的 Z-Library 命令行客户端，自带 Claude Code 和 Codex 插件。";
+  "在终端搜索 Z-Library、浏览热门与推荐、下载、发送到 Kindle。支持 Claude Code 和 Codex 插件。";
 const ZH_OG_DESCRIPTION =
-  "搜书、下载、发送到 Kindle，全程不用离开终端，也可以交给 Claude Code 或 Codex。";
+  "搜书、浏览热门与推荐、下载、发送到 Kindle。也可通过 Claude Code 或 Codex 插件操作。";
 const ZH_OG_IMAGE_ALT = "zlib，终端里的 Z-Library 客户端，图中是它的搜索界面。";
 
 /**

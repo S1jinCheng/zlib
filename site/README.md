@@ -1,69 +1,31 @@
 # zlib.heartleo.dev
 
-The landing page for [zlib](https://github.com/heartleo/zlib). It is one
-self-contained `index.html` with no build step and no dependencies. The only
-external request it makes is for the Google Fonts stylesheet.
-
-## Deploy
-
-GitHub Pages serves this directory, and Cloudflare only holds the DNS record.
-It is the same arrangement as
-[hn-cli](https://github.com/heartleo/hn-cli) uses for hndigest.heartleo.dev.
-
-`.github/workflows/pages.yml` deploys on every push to `main` that touches
-`site/**`. The first run also switches the repository's Pages source to
-"GitHub Actions", so there is nothing to set up in Settings beforehand.
-
-### Cloudflare DNS
-
-Add one record under `heartleo.dev`:
-
-| Field  | Value                |
-| ------ | -------------------- |
-| Type   | `CNAME`              |
-| Name   | `zlib`               |
-| Target | `heartleo.github.io` |
-| Proxy  | **DNS only** (grey cloud) |
-| TTL    | Auto                 |
-
-The proxy has to stay off. GitHub issues the certificate for the custom
-domain itself, and it can only do that when the record resolves to GitHub's
-own addresses. Orange-cloud it and the cert never provisions.
-
-Check it with `dig +short zlib.heartleo.dev`. The answer should be
-`heartleo.github.io.` followed by four `185.199.*.153` addresses.
-
-### GitHub
-
-`site/CNAME` sets the custom domain, so the first deploy fills in
-Settings > Pages > Custom domain by itself. Once the DNS check passes, tick
-**Enforce HTTPS** there. The certificate takes a few minutes.
-
-## Preview locally
+静态 Pages 网站，无前端依赖。修改 `index.html`，生成中文页：
 
 ```bash
+node scripts/build-zh.mjs
 python3 -m http.server 8000 --directory site
-# http://localhost:8000
 ```
 
-## Notes
+预览 `/`、`/zh/` 和 `/send-to-kindle/`，检查桌面、手机和亮暗主题。
 
-- Colors are Catppuccin Latte (light) and Mocha (dark), the same two
-  palettes the CLI ships as `zlib theme latte|mocha`, so the site and the
-  tool match. Terminal blocks stay Mocha in both modes.
-- The hero is a replica of the `zlib search` picker. Key handling mirrors
-  `internal/cli/search_interactive.go`: `↑/↓` `j/k` select, `←/→` `h/l`
-  page, `enter` download, `q` quit. Column widths match the Go source.
-- Copy is bilingual. Each string is a sibling pair of
-  `data-i18n="en"` / `data-i18n="zh"` elements; CSS shows one based on
-  `<html data-lang>`. Add a language by adding a third value.
-- Book listings and `doctor` output are illustrative sample data, not live
-  results.
-- `og.png` is the social card (1200x630). It is a screenshot of a small
-  standalone HTML card, not an export from a design tool, so regenerating it
-  means re-rendering that card at 1200x630 and saving the PNG here. The
-  `og:image` and `twitter:image` tags point at it by absolute URL, which is
-  what the scrapers require.
-- The page carries `SoftwareApplication` JSON-LD. Every field in it is
-  checked against the README and `go.mod`; update it when the supported
-  platforms or the Go version change.
+## 文件
+
+- `index.html`：中英文首页与命令演示。
+- `style.css`：共用样式，使用 Catppuccin Latte / Mocha。
+- `send-to-kindle/index.html`：Kindle 配置指南。
+- `zh/index.html`：生成的中文页，不提交。
+- `og.png`：1200 × 630 社交分享图。
+
+首页文案用相邻的 `data-i18n="en"` / `data-i18n="zh"` 元素配对。
+生成脚本移除静态英文元素，并设置中文 canonical、hreflang 与分享信息。
+演示中的书籍和连接状态是样例，不查询真实服务。
+
+## 发布
+
+`.github/workflows/pages.yml` 在 `main` 的网站、生成脚本或工作流变更后部署；
+也可手动触发。工作流先生成中文页，再上传整个 `site/`。
+
+域名在 GitHub Pages 设置中配置，不使用 `site/CNAME`。
+DNS 将 `zlib.heartleo.dev` 指向 `heartleo.github.io`。
+修改页面时保持现有 URL、canonical、hreflang 和 sitemap 一致。

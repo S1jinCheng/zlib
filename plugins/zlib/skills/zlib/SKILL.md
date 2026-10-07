@@ -1,179 +1,107 @@
 ---
 name: zlib
-description: Search and download books from Z-Library. Wraps the zlib CLI to search by title or author, download by book ID, browse download history, and check daily download limits. Use when the user wants to find, download, or browse books from Z-Library. For Kindle delivery, use the bundled kindle skill instead.
+description: Search, browse popular or recommended books, download by ID, view history, and check Z-Library quotas through the zlib CLI. Use for finding or downloading Z-Library books. Use the bundled kindle skill for local-file delivery.
 license: MIT
 ---
 
 # zlib
 
-Drive [Z-Library](https://github.com/heartleo/zlib) through the `zlib` CLI. `zlib` is a compiled binary the user already has on `PATH`; run it with the available shell tool and read its plain-text output. Several `zlib` subcommands open an interactive prompt that waits for keyboard input when run bare, so use only the non-interactive command forms documented below.
+Use the installed `zlib` binary. Prefer non-interactive commands and JSON.
 
-## Before anything: two preflight checks
+## Start
 
-Run both once at the start of a session. Use the commands for the current shell.
+Check the binary with `command -v zlib` on POSIX or `Get-Command zlib` in
+PowerShell. If missing, tell the user to install it with
+`go install github.com/heartleo/zlib/cmd/zlib@latest` or
+`brew install heartleo/tap/zlib`.
 
-POSIX shell:
+For authenticated commands, run `zlib profile --json` once. Skip this check for
+popular-only browsing. If the session is missing or expired, tell the user:
 
-```bash
-command -v zlib >/dev/null 2>&1 && echo "BIN_OK" || echo "BIN_MISSING"
-zlib profile
-```
+> Open a separate terminal, run `zlib login`, and complete the prompts. Tell me when login succeeds.
 
-PowerShell:
+Wait for the user to finish. Reuse this handoff for later session errors.
+Do not run interactive login or pass credentials as flags; login belongs in the
+user's terminal. Kindle SMTP credentials are handled by the `kindle` skill.
 
-```powershell
-if (Get-Command zlib -ErrorAction SilentlyContinue) { "BIN_OK" } else { "BIN_MISSING" }
-zlib profile
-```
-
-1. **Binary present?** If you see `BIN_MISSING`, stop and tell the user to install it, then wait:
-   > `zlib` is not on your PATH. Install it with `go install github.com/heartleo/zlib/cmd/zlib@latest` (or `brew install heartleo/tap/zlib`), then ask me again.
-
-2. **Logged in?** `zlib profile` prints the user's download limits when authenticated. If instead you see `Not logged in. Run: zlib login` or `session expired, run \`zlib login\``, stop and give the user this friendly handoff, then wait:
-   > 🔐 Looks like you're not signed in to Z-Library yet. Open a **separate terminal window** (any shell — not this chat), run `zlib login`, and complete the prompts it shows. Once it says login succeeded, come back here and ask me again — I'll pick up where we left off.
-
-   **Never run `zlib login` yourself.** Its interactive prompts need a real terminal — inside this chat there is no TTY, so it cannot work here (same pattern as `gh auth login`: authentication happens in the user's own terminal, and the CLI persists the session to `~/.config/zlib/session.json` for later commands). Do not pass credentials as flags either — that leaks them into shell history. Your job is only the friendly nudge above. Reuse this same handoff whenever any command (search, history, profile, download) reports not-logged-in / session-expired mid-session — don't invent a new message each time. (An email/SMTP password exists too, but that belongs solely to the `zlib:kindle` skill — never bring it up around login.)
-
-## Golden rule: never run a bare interactive command
-
-These forms open an interactive prompt and will hang waiting for input. **Do not run them:**
-
-- `zlib search` (no query)
-- `zlib history` (no `--page`, `--format`, or `--download`)
-- `zlib kindle` / `zlib kindle send` (no file)
-
-Always pass the arguments below that force plain-text / non-interactive output.
-
-## Commands
-
-### Search — `zlib search "<query>" --json`
-
-Prefer `--json`: one JSON document on stdout (`{"books":[…],"page":n,"total_pages":n}`), each book with `id` (the value `zlib download` accepts), `name`, `authors`, `year`, `extension`, `size`, `rating`. No table to parse, no truncated titles.
-
-**Always pass `--count 10`.** Each result carries long URL/cover fields (~1 KB per book), so the default 50 bloats the JSON to ~50 KB. Ten at a time keeps it small; use `--page 2` etc. when the user wants more.
+## Find books
 
 ```bash
-zlib search "the pragmatic programmer" --json --count 10
-zlib search "dune" --json --count 10 --page 2
-zlib search "python crash course" --json --count 10 --ext epub --ext pdf   # --ext repeatable; --format is an alias
+zlib search "dune" --json --count 10
+zlib search "dune" --json --count 10 --page 2 --ext epub
+zlib popular --json
+zlib recommended --json
 ```
 
-**Parse, never truncate.** Read the complete JSON and project only the fields you need. Do not pipe it through byte- or line-limiting commands: truncated JSON loses data and cannot be parsed. At `--count 10` the raw document is small enough to read directly. When a parser is useful, use a tool already available in the current environment, such as `ConvertFrom-Json` in PowerShell or `jq` on POSIX. The same parse-first rule applies to `history --json` and `profile --json`.
+Search returns `{books, page, total_pages}`. Popular and recommended return book
+arrays, including `[]` when empty. Recommended requires login; popular allows
+anonymous requests. The two lists have no `--count`, `--page`, or filter flags.
 
-Flags: `--json`, `-p/--page` (default 1), `-n/--count` (default 50 — always override to 10), `--ext`/`--format` (repeatable extension filter), `--full-title` (table only).
+Use `--count 10` for search to limit response size. Parse the complete JSON
+before selecting fields; never truncate raw JSON. Use the same rule for history
+and profile. Relay every result in a Markdown table: #, ID, Title, Authors, Year,
+Format, Size, Rating. Keep suspect entries and note the concern; missing values
+appear as `-`. IDs are ready for download. Ask the user to choose when several
+matches fit; otherwise select from the requested title, author, format, and size.
 
-**Always relay results to the user as a markdown table** built from the JSON (columns: #, ID, Title, Authors, Year, Format, Size, Rating) — never dump raw JSON at the user. Include every row; if an entry looks suspect (spam collection, placeholder metadata), keep it and add a note rather than dropping it. If `--json` is not recognized (older binary), fall back to the plain table form — a query argument alone already forces static output — and read IDs from the table's ID column.
+If an older binary lacks JSON support, use search with a query or history with
+`--page` to get static tables, and suggest upgrading.
 
-To go from a search result straight to a file, take the ID from the table and call `download` below. (`zlib search` also accepts `--dir`/`--send-to-kindle`, but prefer the explicit `download` command so the ID is unambiguous.)
+## Download
 
-### Download — `zlib download <book-id>`
+Check `ZLIB_DOWNLOAD_DIR` in the environment, working-directory `.env`, and
+`~/.config/zlib/.env`, reading only that setting. If configured, omit `--dir` and
+let the CLI resolve it. An explicit destination from the user takes precedence.
+If neither exists, ask where to save, offering Downloads, `./books`, Desktop,
+or a custom path. Show a platform-correct absolute path. Create a selected
+missing directory and reuse the choice for this session.
 
-**Check for a configured default before asking.** If the user has set `ZLIB_DOWNLOAD_DIR`, that is their standing answer to "where should this go" — use it, say where the file will land, and skip the question. It can be exported or written in `~/.config/zlib/.env`, so check both; the shell alone will miss the `.env` case.
-
-POSIX shell:
+If the user requests a permanent default, update `ZLIB_DOWNLOAD_DIR` in the
+global `.env` without overwriting other settings. Precedence is shell → local
+`.env` → global `.env`.
 
 ```bash
-printf 'exported=%s\n' "${ZLIB_DOWNLOAD_DIR:-<unset>}"
-cat .env ~/.config/zlib/.env 2>/dev/null |
-    grep '^[[:space:]]*\(export[[:space:]]\)\?ZLIB_DOWNLOAD_DIR=' || echo "no .env entry"
+zlib download 115066162:e9f13b --dir ./books
 ```
 
-PowerShell:
+Read and report the printed `Saved to:` path. Without a TTY, download prints
+plain progress and exits; it does not require an interactive UI. `--dir` overrides
+`ZLIB_DOWNLOAD_DIR`; otherwise the default is the current directory.
+Add `--send-to-kindle` only when requested and Kindle is configured.
 
-```powershell
-"exported=" + $(if ($env:ZLIB_DOWNLOAD_DIR) { $env:ZLIB_DOWNLOAD_DIR } else { "<unset>" })
-$hit = Get-Content .env, "$env:USERPROFILE\.config\zlib\.env" -ErrorAction SilentlyContinue |
-    Select-String '^\s*(export\s)?ZLIB_DOWNLOAD_DIR='
-if ($hit) { $hit.Line } else { "no .env entry" }
-```
+Older builds may ignore the default directory or wait on a TUI. If a command
+hangs, stop it with the execution timeout and inspect the target file before
+reporting success. Use an explicit `--dir` for builds that ignore the variable,
+and suggest upgrading. Respect the daily quota; do not loop past it.
 
-When either source has a value, **omit `--dir`** and let zlib resolve it — that keeps one behaviour across every command and avoids re-deriving the path yourself. Pass `--dir` only when the user asks for a different folder for that one download; it overrides the variable for that run.
-
-Older zlib builds ignore `ZLIB_DOWNLOAD_DIR` and always default to the current directory. The `Saved to:` line tells you which happened: if the file landed in the working directory despite the variable being set, the binary predates it — pass `--dir` explicitly for the rest of the session and suggest `go install github.com/heartleo/zlib/cmd/zlib@latest`.
-
-**Otherwise, ask where to save first.** Unless the user already named a folder, ask them before downloading. Offer the common landing spots and allow a custom path. Resolve each option to a **platform-correct absolute path** and show it so the user sees exactly where the file will land:
-
-| Option | Windows | macOS | Linux |
-|--------|---------|-------|-------|
-| Downloads (recommended) | `%USERPROFILE%\Downloads` | `~/Downloads` | `~/Downloads` (or `xdg-user-dir DOWNLOAD` if available) |
-| `./books` in current dir | same everywhere — resolve to absolute | | |
-| Desktop | `%USERPROFILE%\Desktop` | `~/Desktop` | `~/Desktop` — **may not exist on server/minimal installs; offer only if the directory exists** |
-| *Other* | user types any path | | |
-
-Notes:
-- Detect the platform from the current shell (`$IsWindows`/`$IsMacOS`/`$IsLinux` in PowerShell, or `uname -s` on POSIX).
-- `--dir` expands a leading `~` itself, so `--dir "~/Downloads"` is safe; expand `%USERPROFILE%` yourself. `--dir` does not create the folder, so create it first with the current shell.
-- On headless Linux (no Desktop dir, SSH session), drop the Desktop option rather than offering a path that doesn't exist.
-- Remember the chosen folder for the rest of the session — don't re-ask on every download; re-confirm only if the user switches context.
-- If the user says they always want the same folder, offer to make it permanent so no future session has to ask: append `ZLIB_DOWNLOAD_DIR=<path>` to `~/.config/zlib/.env` (create the file as shown under **Output & errors**, and don't overwrite what's already in it).
-
-Saves to `--dir`, else `ZLIB_DOWNLOAD_DIR`, else the current directory. When it detects no terminal (i.e. you running it), it prints a plain `Downloading…` / `Saved to: <path> (<n> bytes)` and exits cleanly with code 0. Just run it and read the printed path — that line is the authority on where the file went, so report it rather than the folder you expected:
+## History and quota
 
 ```bash
-zlib download Gz31nyAV5E --dir ./books
-ls -la ./books/                       # POSIX: optional verification
+zlib history --json
+zlib history --json --page 2 --format epub
+zlib history --download 115066162:e9f13b --dir ./books
+zlib profile --json
 ```
 
-```powershell
-zlib download Gz31nyAV5E --dir ./books
-Get-ChildItem ./books                 # PowerShell: optional verification
-```
+History returns `{items, page, total_pages}`. Profile returns `daily_amount`,
+`daily_allowed`, `daily_remaining`, and `daily_reset`. Re-download uses the same
+destination rules as download. Show parsed values, not raw JSON or ANSI output.
 
-Flags: `-d/--dir` (falls back to `ZLIB_DOWNLOAD_DIR`, then `.`), `--send-to-kindle`.
+Bare `search`, bare `history`, and Kindle commands without a file can open a
+prompt. Use the explicit forms above; local-file delivery belongs to `kindle`.
 
-> Compatibility: older zlib builds (before the no-TTY plain path) render an interactive progress display and can hang without a terminal. If a download fails to return, stop it with the shell tool's execution timeout and verify the target directory instead of trusting the exit code. A complete file of the size shown in the search table is a success. Suggest upgrading with `go install github.com/heartleo/zlib/cmd/zlib@latest`.
-
-### History — `zlib history --json`
-
-Prefer `--json`: it always forces the static path (never the interactive browser, even bare) and prints `{"items":[…],"page":n,"total_pages":n}` with each item's `id`, `name`, `extension`, `size`, `date`. Relay it as a markdown table (same rule as search — complete rows, never raw JSON).
+## Connection errors
 
 ```bash
-zlib history --json                          # list past downloads as JSON
-zlib history --json --page 2 --format epub   # paginate / filter
-zlib history --download Gz31nyAV5E --dir ./books   # re-download a book from history
+zlib endpoint --json
+zlib doctor --json
 ```
 
-`--download` uses the same download path as `zlib download` — it exits cleanly with no TTY, same as above.
+New logins prefer EAPI and can recover endpoints automatically. `--domain` or
+`ZLIB_DOMAIN` pins an endpoint and disables switching; explain this when
+suggesting an override. Doctor checks HTML and EAPI independently.
 
-Flags: `--json`, `-p/--page`, `-f/--format`, `-D/--download <book-id>`, `-d/--dir` (same `ZLIB_DOWNLOAD_DIR` fallback), `--send-to-kindle`.
-
-Older binary without `--json`: bare `zlib history` opens an interactive browser — always pass `--page`/`--format` to force the static table.
-
-### Profile — `zlib profile --json`
-
-Shows the daily download quota. `--json` prints `{"daily_amount":n,"daily_allowed":n,"daily_remaining":n,"daily_reset":"…"}`; without it, a styled card. Also doubles as the login check in preflight.
-
-### Kindle delivery → the `/zlib:kindle` skill
-
-Sending a downloaded file to Kindle (and the SMTP/Amazon setup it needs) lives in a separate skill, `zlib:kindle`. When the user wants a book on their Kindle, hand off to it rather than documenting SMTP here. `zlib download --send-to-kindle` also delivers in one step once Kindle is configured.
-
-## Typical flow
-
-1. Preflight (binary + login).
-2. `zlib search "<what the user wants>"` → show the table.
-3. If several matches are plausible, ask the user to pick; otherwise infer the best ID from title, author, format, and size.
-4. `zlib download <id> --dir <dir>` → read the printed `Saved to:` path and report it.
-5. If the user wants it on their Kindle, use the bundled `kindle` skill.
-
-## Output & errors
-
-- `zlib` output is plain text / Unicode tables — just relay the relevant rows; don't dump raw ANSI.
-- On `session expired` / `Not logged in` mid-session, the session lapsed — reuse the **same friendly separate-terminal `zlib login` handoff** from preflight #2 (never pass credentials as flags), then wait for the user.
-- Network/domain errors: Z-Library mirrors change often. If requests fail with a domain/connection error, have the user set `ZLIB_DOMAIN` (a working mirror) or `ZLIB_PROXY` by editing their env file rather than putting secrets or reusable configuration in shell history. Create the directory and file without overwriting an existing file, then show its absolute path.
-
-  ```bash
-  mkdir -p ~/.config/zlib; touch ~/.config/zlib/.env; chmod 600 ~/.config/zlib/.env
-  echo "Edit: $(cd ~/.config/zlib && pwd)/.env  (add ZLIB_DOMAIN=… or ZLIB_PROXY=…, one per line)"
-  ```
-
-  ```powershell
-  $configDir = Join-Path $env:USERPROFILE '.config\zlib'
-  New-Item -ItemType Directory -Force $configDir | Out-Null
-  $envFile = Join-Path $configDir '.env'
-  if (-not (Test-Path $envFile)) { New-Item -ItemType File $envFile | Out-Null }
-  $envFile
-  ```
-
-  Open helpers: Windows `notepad "$env:USERPROFILE\.config\zlib\.env"` · macOS `open -t ~/.config/zlib/.env` · Linux `${EDITOR:-nano} ~/.config/zlib/.env`. Then retry.
-  Older zlib builds read `ZLIB_DOMAIN` only from a real exported environment variable, never from an env file, and let the domain saved in `session.json` override it — if a configured mirror appears to be ignored, have the user upgrade, or `export ZLIB_DOMAIN=…` for the current shell as a stopgap.
-- Respect the user's daily download limit shown by `zlib profile`; don't loop downloads past it.
+For a proxy, have the user edit `ZLIB_PROXY` in their env file. Preserve existing
+settings and keep secrets out of chat and shell history. Shell values override
+both `.env` files, and the working-directory file overrides the global one.
+Upgrade old binaries if configured values are ignored.

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>zlib — a Z-Library CLI for your terminal and AI agents</title>
-<meta name="description" content="Search, download, and send books to Kindle from the terminal. An open-source Z-Library client with plugins for Claude Code and Codex.">
+<title>zlib · a Z-Library CLI for your terminal and AI agents</title>
+<meta name="description" content="Search Z-Library, browse popular books and recommendations, download files, and send them to Kindle. Includes Claude Code and Codex plugins.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://zlib.heartleo.dev/">
 <link rel="alternate" hreflang="en" href="https://zlib.heartleo.dev/">
@@ -12,8 +12,8 @@
 <link rel="alternate" hreflang="x-default" href="https://zlib.heartleo.dev/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://zlib.heartleo.dev/">
-<meta property="og:title" content="zlib — a Z-Library CLI for your terminal and AI agents">
-<meta property="og:description" content="Search, download, and send books to Kindle from the terminal, or hand the same binary to Claude Code or Codex.">
+<meta property="og:title" content="zlib · a Z-Library CLI for your terminal and AI agents">
+<meta property="og:description" content="Search, browse recommendations, download, and send books to Kindle. Use the CLI or its Claude Code and Codex plugins.">
 <meta property="og:site_name" content="zlib">
 <meta property="og:locale" content="en_US">
 <meta property="og:locale:alternate" content="zh_CN">
@@ -31,7 +31,7 @@
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "zlib",
-  "description": "A command-line client for Z-Library. Search the catalogue, download books, and mail them to a Kindle address from the terminal, or drive the same binary from an AI coding agent through the bundled Claude Code and Codex plugins.",
+  "description": "A Z-Library command-line client with search, popular books, personalized recommendations, downloads, Kindle delivery, and JSON output. Includes Claude Code and Codex plugins.",
   "url": "https://zlib.heartleo.dev/",
   "applicationCategory": "UtilitiesApplication",
   "applicationSubCategory": "Command Line Utility",
@@ -93,8 +93,8 @@
         <span data-i18n="zh">终端里的 <span class="z">Z&#8209;Library</span></span>
       </h1>
       <p class="sub">
-        <span data-i18n="en">Search the catalogue, download the file, and mail it to your Kindle without leaving the terminal.</span>
-        <span data-i18n="zh">搜书、下载、发送到 Kindle，全程不用离开终端。</span>
+        <span data-i18n="en">Search, browse popular books and recommendations, download, and send files to Kindle.</span>
+        <span data-i18n="zh">搜书、浏览热门与推荐、下载、发送到 Kindle。</span>
       </p>
 
       <div class="cmdline">
@@ -138,17 +138,18 @@
     <div>
       <div class="eyebrow">$ brew install</div>
       <h2 class="sec">
-        <span data-i18n="en">Pick a package manager.</span>
-        <span data-i18n="zh">挑一个包管理器。</span>
+        <span data-i18n="en">Install, then log in.</span>
+        <span data-i18n="zh">安装，然后登录。</span>
       </h2>
       <p class="lede">
-        <span data-i18n="en">Every release ships prebuilt binaries for macOS, Linux, and Windows. Or build it yourself; it is a single Go module.</span>
-        <span data-i18n="zh">每个版本都发 macOS、Linux、Windows 的预编译二进制。也可以自己编译，就一个 Go module。</span>
+        <span data-i18n="en">Choose an installer for macOS, Linux, or Windows.</span>
+        <span data-i18n="zh">支持 macOS、Linux、Windows，选择一种安装方式即可。</span>
       </p>
       <div class="status-key next" style="margin-top:1.6rem">
-        <div><b data-i18n="en">Then</b><b data-i18n="zh">然后</b><span data-i18n="en">run <span style="color:var(--accent)">zlib doctor --eapi</span> to pick a domain</span><span data-i18n="zh">跑 <span style="color:var(--accent)">zlib doctor --eapi</span> 挑一个可用域名</span></div>
-        <div><b data-i18n="en">And</b><b data-i18n="zh">接着</b><span data-i18n="en"><span style="color:var(--accent)">zlib login --eapi</span>, then <span style="color:var(--accent)">zlib search</span></span><span data-i18n="zh"><span style="color:var(--accent)">zlib login --eapi</span>，再 <span style="color:var(--accent)">zlib search</span></span></div>
+        <div><b data-i18n="en">Then</b><b data-i18n="zh">然后</b><span data-i18n="en">run <span style="color:var(--accent)">zlib login</span> to sign in</span><span data-i18n="zh">运行 <span style="color:var(--accent)">zlib login</span> 登录</span></div>
+        <div><b data-i18n="en">And</b><b data-i18n="zh">接着</b><span data-i18n="en"><span style="color:var(--accent)">zlib search "dune"</span> to find a book</span><span data-i18n="zh"><span style="color:var(--accent)">zlib search "dune"</span> 搜书</span></div>
       </div>
+      <p class="setup-note"><span data-i18n="en">Endpoints are selected automatically. No domain setup needed.</span><span data-i18n="zh">自动选择 endpoint，无需配置域名。</span></p>
     </div>
 
     <div>
@@ -194,7 +195,7 @@
 <span class="p">$</span> cd zlib
 <span class="p">$</span> go build -o zlib ./cmd/zlib</pre>
         </div>
-        <p class="note"><span data-i18n="en">It builds with the standard Go toolchain. <b>make test</b> runs the suite.</span><span data-i18n="zh">用标准 Go 工具链就能编译。<b>make test</b> 跑测试。</span></p>
+        <p class="note"><span data-i18n="en">Requires Go 1.25+. Run <b>go test ./...</b> to test.</span><span data-i18n="zh">需要 Go 1.25+。<b>go test ./...</b> 运行测试。</span></p>
       </div>
     </div>
   </div>
@@ -204,12 +205,12 @@
 <section class="wrap band" id="commands">
   <div class="eyebrow">$ zlib --help</div>
   <h2 class="sec">
-    <span data-i18n="en">Eight subcommands, all scriptable.</span>
-    <span data-i18n="zh">八条子命令，都能写进脚本。</span>
+    <span data-i18n="en">Find your next book.</span>
+    <span data-i18n="zh">找下一本书。</span>
   </h2>
   <p class="lede" style="margin-bottom:1.3rem">
-    <span data-i18n="en"><b class="mono">search</b>, <b class="mono">history</b>, <b class="mono">profile</b>, and <b class="mono">doctor</b> each take <b class="mono">--json</b>, so the same tool works by hand and inside a script. Pick one to see what it prints.</span>
-    <span data-i18n="zh"><b class="mono">search</b>、<b class="mono">history</b>、<b class="mono">profile</b>、<b class="mono">doctor</b> 都支持 <b class="mono">--json</b>，手敲和写脚本用的是同一个工具。点一条看它输出什么。</span>
+    <span data-i18n="en">Search by title, browse popular books, or get recommendations from your account. Click a command to preview its output.</span>
+    <span data-i18n="zh">按书名搜索、浏览热门，或查看账号推荐。点一条命令看输出示例。</span>
   </p>
   <a class="pill-link" href="/send-to-kindle/" style="margin-bottom:2.6rem">
     <span data-i18n="en">Setting up Send to Kindle</span><span data-i18n="zh">发送到 Kindle 怎么配</span>
@@ -219,13 +220,16 @@
 
   <div class="cmd-grid">
     <div class="cmd-list" role="tablist" aria-label="Commands">
-      <button type="button" role="tab" aria-selected="false" data-cmd="login"><span class="k">login</span><span class="d"><span data-i18n="en">Sign in and pin a working domain</span><span data-i18n="zh">登录，并锁定一个可用域名</span></span></button>
-      <button type="button" role="tab" aria-selected="true" data-cmd="search"><span class="k">search</span><span class="d"><span data-i18n="en">Browse results with the keyboard</span><span data-i18n="zh">用键盘翻搜索结果</span></span></button>
-      <button type="button" role="tab" aria-selected="false" data-cmd="download"><span class="k">download</span><span class="d"><span data-i18n="en">Fetch a book by ID, with live progress</span><span data-i18n="zh">按 ID 下载，带实时进度</span></span></button>
-      <button type="button" role="tab" aria-selected="false" data-cmd="history"><span class="k">history</span><span class="d"><span data-i18n="en">Re-download anything you pulled before</span><span data-i18n="zh">重新下载以前拿过的书</span></span></button>
+      <button type="button" role="tab" aria-selected="false" data-cmd="login"><span class="k">login</span><span class="d"><span data-i18n="en">Save your login session</span><span data-i18n="zh">登录并保存会话</span></span></button>
+      <button type="button" role="tab" aria-selected="true" data-cmd="search"><span class="k">search</span><span class="d"><span data-i18n="en">Search by title or author</span><span data-i18n="zh">按书名或作者搜索</span></span></button>
+      <button type="button" role="tab" aria-selected="false" data-cmd="popular"><span class="k">popular</span><span class="d"><span data-i18n="en">Browse popular books</span><span data-i18n="zh">浏览热门书籍</span></span></button>
+      <button type="button" role="tab" aria-selected="false" data-cmd="recommended"><span class="k">recommended</span><span class="d"><span data-i18n="en">Get recommendations after login</span><span data-i18n="zh">查看个性化推荐，需登录</span></span></button>
+      <button type="button" role="tab" aria-selected="false" data-cmd="download"><span class="k">download</span><span class="d"><span data-i18n="en">Download by result ID</span><span data-i18n="zh">按结果 ID 下载</span></span></button>
+      <button type="button" role="tab" aria-selected="false" data-cmd="history"><span class="k">history</span><span class="d"><span data-i18n="en">Browse past downloads</span><span data-i18n="zh">浏览下载历史</span></span></button>
       <button type="button" role="tab" aria-selected="false" data-cmd="profile"><span class="k">profile</span><span class="d"><span data-i18n="en">Check today's download quota</span><span data-i18n="zh">看今天还剩多少下载额度</span></span></button>
       <button type="button" role="tab" aria-selected="false" data-cmd="kindle"><span class="k">kindle</span><span class="d"><span data-i18n="en">Mail a file to your Kindle address</span><span data-i18n="zh">把文件发送到 Kindle 邮箱</span></span></button>
-      <button type="button" role="tab" aria-selected="false" data-cmd="doctor"><span class="k">doctor</span><span class="d"><span data-i18n="en">Probe every mirror before you pick one</span><span data-i18n="zh">先探测所有镜像再决定用哪个</span></span></button>
+      <button type="button" role="tab" aria-selected="false" data-cmd="endpoint"><span class="k">endpoint</span><span class="d"><span data-i18n="en">Inspect the selected endpoint</span><span data-i18n="zh">查看当前 endpoint</span></span></button>
+      <button type="button" role="tab" aria-selected="false" data-cmd="doctor"><span class="k">doctor</span><span class="d"><span data-i18n="en">Diagnose HTML and EAPI access</span><span data-i18n="zh">诊断 HTML 和 EAPI 连接</span></span></button>
       <button type="button" role="tab" aria-selected="false" data-cmd="theme"><span class="k">theme</span><span class="d"><span data-i18n="en">Seven palettes, or follow the terminal</span><span data-i18n="zh">七套配色，或跟随终端背景</span></span></button>
     </div>
 
@@ -236,7 +240,8 @@
         <span class="dot" style="background:var(--t-green)"></span>
         <span class="term-title" id="cmdTitle">zlib search</span>
       </div>
-      <div class="term-body" id="cmdOut"></div>
+      <div class="term-body" id="cmdOut" role="tabpanel" aria-label="Command output preview" tabindex="0"></div>
+      <p class="demo-caption"><span data-i18n="en">Sample output. Book listings and endpoint health vary.</span><span data-i18n="zh">示例输出，书籍列表与连接状态以实际结果为准。</span></p>
     </div>
   </div>
 </section>
@@ -245,24 +250,24 @@
 <section class="wrap band" id="agents">
   <div class="eyebrow">/plugin install</div>
   <h2 class="sec">
-    <span data-i18n="en">Hand it to your coding agent.</span>
-    <span data-i18n="zh">交给你的编码 agent。</span>
+    <span data-i18n="en">Use zlib with an agent.</span>
+    <span data-i18n="zh">让 agent 帮你找书。</span>
   </h2>
   <p class="lede" style="margin-bottom:2.4rem">
-    <span data-i18n="en">zlib ships plugins for Claude Code and Codex. The agent calls the same binary you do, and reads the same <b class="mono">--json</b> output.</span>
-    <span data-i18n="zh">zlib 自带 Claude Code 和 Codex 插件。Agent 调用的是同一个二进制，读的是同一份 <b class="mono">--json</b> 输出。</span>
+    <span data-i18n="en">Install the CLI and log in first. Plugins read its <b class="mono">--json</b> output to search, browse, and download books.</span>
+    <span data-i18n="zh">先安装 CLI 并登录。插件读取 <b class="mono">--json</b> 输出，帮你搜索、浏览和下载图书。</span>
   </p>
   <div class="two">
     <div class="card">
       <h3>Claude Code</h3>
-      <p><span data-i18n="en">Install the marketplace, then ask for a book by name.</span><span data-i18n="zh">装上 marketplace，然后直接报书名。</span></p>
+      <p><span data-i18n="en">Add the marketplace and install the plugin.</span><span data-i18n="zh">添加 marketplace，再安装插件。</span></p>
       <pre><span class="p">/</span>plugin marketplace add heartleo/zlib
 <span class="p">/</span>plugin install zlib@zlib-plugin-cc</pre>
       <p class="after"><span data-i18n="en"><code>/zlib "the pragmatic programmer"</code> searches and downloads. <code>/zlib:kindle</code> sends it on.</span><span data-i18n="zh"><code>/zlib "the pragmatic programmer"</code> 搜索并下载，<code>/zlib:kindle</code> 转寄 Kindle。</span></p>
     </div>
     <div class="card">
       <h3>Codex</h3>
-      <p><span data-i18n="en">A skills-only plugin, so there is no MCP server to keep running.</span><span data-i18n="zh">纯 skills 插件，不需要常驻 MCP server。</span></p>
+      <p><span data-i18n="en">Install the plugin, then ask Codex to find a book.</span><span data-i18n="zh">安装插件，再让 Codex 找书。</span></p>
       <pre><span class="p">$</span> codex plugin marketplace add heartleo/zlib
 <span class="p">$</span> codex plugin add zlib@zlib</pre>
       <p class="after"><span data-i18n="en">Ask Codex to find a title, or point the bundled Kindle skill at a local file.</span><span data-i18n="zh">让 Codex 找书，或者把自带的 Kindle skill 指向本地文件。</span></p>
@@ -276,29 +281,25 @@
     <div>
       <div class="eyebrow">$ zlib doctor</div>
       <h2 class="sec">
-        <span data-i18n="en">When the mirror fights back.</span>
-        <span data-i18n="zh">镜像站不让进的时候。</span>
+        <span data-i18n="en">Automatic endpoints. Diagnostics when needed.</span>
+        <span data-i18n="zh">自动连接，失败时再排查。</span>
       </h2>
       <p class="lede">
-        <span data-i18n="en">Most Z-Library web domains now sit behind DiamWall. Run <b class="mono">doctor</b> first: it checks every known mirror without logging you in or touching your saved session, and tells you which ones still answer.</span>
-        <span data-i18n="zh">现在大多数 Z-Library 网页域名都挂在 DiamWall 后面。先跑 <b class="mono">doctor</b>。它不用登录，也不动你已经存好的会话，把所有已知镜像探一遍，然后告诉你哪些还能用。</span>
+        <span data-i18n="en">New logins use EAPI first and select endpoints automatically. Use <b class="mono">endpoint</b> to inspect the current choice, or <b class="mono">doctor</b> to check connectivity.</span>
+        <span data-i18n="zh">新登录优先 EAPI，自动选择 endpoint。用 <b class="mono">endpoint</b> 查看当前选择，连接失败时用 <b class="mono">doctor</b> 排查。</span>
       </p>
-      <div class="status-key">
-        <div><b class="ok">healthy</b><span data-i18n="en">answered normally, so use it</span><span data-i18n="zh">正常响应，可以直接用</span></div>
-        <div><b class="warn">challenged</b><span data-i18n="en">served a JS proof-of-work; the client clears it for you</span><span data-i18n="zh">返回了 JS 工作量证明，客户端会自动解掉</span></div>
-        <div><b class="bad">diamwall_blocked</b><span data-i18n="en">intercepted, so pick another</span><span data-i18n="zh">被拦截了，换一个</span></div>
-        <div><b class="bad">redirect_loop</b><span data-i18n="en">redirects never reached content</span><span data-i18n="zh">重定向绕不出去</span></div>
-        <div><b class="bad">network_error</b><span data-i18n="en">DNS, TLS, timeout, or reset. Try a proxy</span><span data-i18n="zh">DNS、TLS、超时或连接重置，试试代理</span></div>
-      </div>
+      <p class="setup-note"><span data-i18n="en"><code>--domain</code> or <code>ZLIB_DOMAIN</code> pins the endpoint and stops automatic switching.</span><span data-i18n="zh"><code>--domain</code> 或 <code>ZLIB_DOMAIN</code> 会固定 endpoint，禁用自动换站。</span></p>
+      <a class="pill-link" href="https://github.com/heartleo/zlib/blob/main/docs/eapi.md" target="_blank" rel="noopener"><span data-i18n="en">Endpoint and fallback rules</span><span data-i18n="zh">连接与兜底规则</span><span class="arw" aria-hidden="true">→</span></a>
     </div>
     <div class="term">
       <div class="term-bar">
         <span class="dot" style="background:var(--t-red)"></span>
         <span class="dot" style="background:var(--t-yellow)"></span>
         <span class="dot" style="background:var(--t-green)"></span>
-        <span class="term-title">zlib doctor --eapi</span>
+        <span class="term-title">zlib doctor</span>
       </div>
       <div class="term-body" id="doctorOut"></div>
+      <p class="demo-caption"><span data-i18n="en">Sample checks, not live endpoint status.</span><span data-i18n="zh">探测示例，不代表当前可用状态。</span></p>
     </div>
   </div>
 </section>
@@ -311,8 +312,8 @@
     <span data-i18n="zh">选一套，或者跟着终端走。</span>
   </h2>
   <p class="lede">
-    <span data-i18n="en">These are the palettes your editor probably already uses, and <b class="mono">zlib theme auto</b> reads your terminal background to choose between them. This page is set in two: <b class="mono">latte</b> in light, <b class="mono">mocha</b> in dark.</span>
-    <span data-i18n="zh">这些配色你的编辑器多半已经在用了，<b class="mono">zlib theme auto</b> 会读终端背景色自己挑。这个页面用了其中两套：亮色 <b class="mono">latte</b>，暗色 <b class="mono">mocha</b>。</span>
+    <span data-i18n="en">Choose a palette, or use <b class="mono">zlib theme auto</b> to follow your terminal background.</span>
+    <span data-i18n="zh">选一套配色，或用 <b class="mono">zlib theme auto</b> 跟随终端背景。</span>
   </p>
   <div class="swatches" id="swatches"></div>
 </section>
@@ -326,8 +327,8 @@
     <span data-i18n="zh">去找本书吧。</span>
   </h2>
   <p>
-    <span data-i18n="en">Free, MIT licensed, and it only ever talks to Z-Library and the SMTP server you configure.</span>
-    <span data-i18n="zh">免费，MIT 协议，只会连 Z-Library 和你自己配的 SMTP 服务器。</span>
+    <span data-i18n="en">Open source under the MIT license.</span>
+    <span data-i18n="zh">MIT 协议，开源免费。</span>
   </p>
   <div class="btns">
     <a class="btn pri" href="https://github.com/heartleo/zlib/releases/latest" target="_blank" rel="noopener">
@@ -347,8 +348,8 @@
       <div class="f-brand">
         <a class="brand" href="/">zlib<span class="caret" aria-hidden="true"></span></a>
         <p>
-          <span data-i18n="en">A Z-Library client for people who already have a terminal open.</span>
-          <span data-i18n="zh">一个 Z-Library 客户端。写给终端反正一直开着的那些人。</span>
+          <span data-i18n="en">Search and download Z-Library books from your terminal.</span>
+          <span data-i18n="zh">在终端搜索和下载 Z-Library 图书。</span>
         </p>
       </div>
       <div>
@@ -436,6 +437,38 @@
     $$("[data-pane]").forEach(p => p.classList.toggle("on", p.dataset.pane === k));
   }));
 
+  /* Tab / arrow-key navigation works for both preview groups. */
+  $$("[role=tablist]").forEach((group, groupIndex) => {
+    const buttons = $$("[role=tab]", group);
+    const syncTabs = () => buttons.forEach((button, index) => {
+      const selected = button.getAttribute("aria-selected") === "true";
+      button.tabIndex = selected ? 0 : -1;
+      button.id = "preview-tab-" + groupIndex + "-" + index;
+      const panel = button.dataset.inst ? $('[data-pane="' + button.dataset.inst + '"]') : $("#cmdOut");
+      panel.id = button.dataset.inst ? "install-" + button.dataset.inst : "cmdOut";
+      panel.setAttribute("role", "tabpanel");
+      button.setAttribute("aria-controls", panel.id);
+      if (selected || button.dataset.inst) panel.setAttribute("aria-labelledby", button.id);
+      if (selected && group.scrollWidth > group.clientWidth) button.scrollIntoView({block:"nearest",inline:"nearest"});
+    });
+    buttons.forEach(button => button.addEventListener("click", () => queueMicrotask(syncTabs)));
+    group.addEventListener("keydown", event => {
+      const index = buttons.indexOf(document.activeElement);
+      if (index < 0) return;
+      let next;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (index + 1) % buttons.length;
+      else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (index + buttons.length - 1) % buttons.length;
+      else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = buttons.length - 1;
+      else return;
+      event.preventDefault();
+      buttons[next].click();
+      buttons[next].focus({preventScroll:true});
+      buttons[next].scrollIntoView({block:"nearest",inline:"nearest"});
+    });
+    syncTabs();
+  });
+
   /* ── text helpers, matching the CLI's column widths ──── */
   const trunc = (s, n) => (s.length > n ? s.slice(0, n) : s);
   const padR  = (s, n) => trunc(s, n).padEnd(n, " ");
@@ -443,29 +476,8 @@
   const G     = '<span class="gap"> </span>';
 
   /* ── hero: a replica of `zlib search` ────────────────── */
-  const PAGES = [
-    [
-      ["115066162", "Dune",                       "Frank Herbert",   "EPUB",  "2.8 MB", "5.0"],
-      ["27462851",  "Dune Messiah",               "Frank Herbert",   "EPUB",  "1.4 MB", "4.6"],
-      ["38104421",  "Children of Dune",           "Frank Herbert",   "PDF",   "3.1 MB", "4.4"],
-      ["19288013",  "God Emperor of Dune",        "Frank Herbert",   "EPUB",  "1.9 MB", "4.2"],
-      ["55519037",  "Heretics of Dune",           "Frank Herbert",   "MOBI",  "2.2 MB", "4.1"],
-      ["88214470",  "Chapterhouse: Dune",         "Frank Herbert",   "EPUB",  "2.0 MB", "4.0"],
-      ["41003377",  "The Dune Encyclopedia",      "W. E. McNelly",   "PDF",  "24.6 MB", "4.7"],
-      ["76620518",  "Dune: The Graphic Novel",    "Brian Herbert",   "PDF",  "61.3 MB", "4.3"]
-    ],
-    [
-      ["90135520",  "The Road to Dune",           "Frank Herbert",   "EPUB",  "1.6 MB", "4.0"],
-      ["62884051",  "Sisterhood of Dune",         "Brian Herbert",   "EPUB",  "2.4 MB", "3.9"],
-      ["11390745",  "Mentats of Dune",            "Brian Herbert",   "EPUB",  "2.3 MB", "3.8"],
-      ["47712806",  "Navigators of Dune",         "Brian Herbert",   "EPUB",  "2.5 MB", "3.8"],
-      ["30948117",  "Dune: House Atreides",       "Brian Herbert",   "PDF",   "4.8 MB", "4.1"],
-      ["88230948",  "Dune: House Harkonnen",      "Brian Herbert",   "PDF",   "4.6 MB", "4.0"],
-      ["71204458",  "Dune: House Corrino",        "Brian Herbert",   "EPUB",  "2.7 MB", "4.0"],
-      ["55190322",  "Paul of Dune",               "Brian Herbert",   "EPUB",  "2.6 MB", "3.9"]
-    ]
-  ];
-  const TOTAL_PAGES = 12;
+  const PAGES = [[["11735659:7659fb", "Dune", "Frank Herbert", "EPUB", "1.85 MB", "5.0"], ["1490631:f3d208", "Dune", "Frank Herbert", "EPUB", "731 KB", "5.0"], ["5029480:258154", "Dune", "Frank Herbert", "EPUB", "776 KB", "5.0"], ["1238984:cf4ea5", "Dune", "Frank Herbert", "MOBI", "1.31 MB", "5.0"], ["11758973:d82cc1", "Dune", "Frank Herbert", "EPUB", "4.07 MB", "4.0"], ["5596344:a674e7", "Dune", "Frank P. Herbert", "EPUB", "747 KB", "5.0"], ["4265928:c13cd9", "Dune", "Frank Herbert", "EPUB", "869 KB", "5.0"], ["22368388:0013c5", "Dune", "Frank Herbert", "EPUB", "907 KB", "4.0"]], [["18054828:cf6195", "Dune", "Frank Herbert", "PDF", "2.40 MB", "5.0"], ["28230153:00a11d", "Dune", "Frank Herbert", "EPUB", "2.84 MB", "5.0"], ["27002599:71f62a", "Dune", "Frank Herbert", "EPUB", "2.06 MB", "5.0"], ["11735657:937f23", "Dune Messiah", "Frank Herbert", "EPUB", "1.14 MB", "5.0"], ["13043262:c82d57", "Dune", "Frank Herbert", "MOBI", "1.23 MB", "5.0"], ["11371248:8f299b", "Dune", "Frank Herbert", "MOBI", "1.27 MB", "4.0"], ["13969906:2c3904", "Dune", "Frank Herbert", "EPUB", "893 KB", "5.0"], ["18790697:6c763e", "Dune", "Frank Herbert", "PDF", "2.83 MB", "0"]]];
+  const TOTAL_PAGES = 32;
   const fmtClass = f => ({ EPUB: "f-epub", PDF: "f-pdf", MOBI: "f-mobi", FB2: "f-fb2" }[f] || "ti");
 
   const picker = $("#picker");
@@ -496,7 +508,7 @@
         '<div class="row' + (on ? " on" : "") + '">' +
         '<span class="c-cur">' + (on ? "❯ " : "  ") + "</span>" +
         '<span class="c-num n">'  + padR(String(i + 1), 2) + "</span>" + G +
-        '<span class="c-id id">'  + padR(b[0], 10)         + "</span>" + G +
+        '<span class="c-id id">'  + padR(b[0].split(":")[0], 10)         + "</span>" + G +
         '<span class="c-title ti">' + esc(padR(b[1], 40))  + "</span>" + G +
         '<span class="c-auth au">'  + esc(padR(b[2], 15))  + "</span>" + G +
         '<span class="c-fmt ' + fmtClass(b[3]) + '">' + padR(b[3], 4) + "</span>" + G +
@@ -588,115 +600,61 @@
   new IntersectionObserver(es => es.forEach(en => en.isIntersecting ? startDemo() : stopDemo()), { threshold: .25 })
     .observe(picker);
 
-  /* ── commands: one terminal, eight transcripts ───────── */
-  const L = (cls, s) => '<div><span class="' + cls + '">' + s + "</span></div>";
-  const P = s => '<div><span class="mauve">❯</span> <span class="title">' + s + "</span></div>";
+  /* ── command previews ───────────────────────────────── */
+  const L = (cls, text) => '<div class="' + cls + '">' + esc(text) + '</div>';
+  const P = text => '<div><span class="mauve">❯</span> <span class="title">' + esc(text) + '</span></div>';
   const BLANK = "<div>&nbsp;</div>";
-
+  const note = (en, zh) => '<div class="preview-note"><span data-i18n="' + "en" + '">' + esc(en) + '</span><span data-i18n="' + "zh" + '">' + esc(zh) + '</span></div>';
+  const previewJSON = value => '<pre class="preview-json">' + esc(JSON.stringify(value, null, 2)) + '</pre>';
+  const bookRows = [["11735659:7659fb", "Dune", "Frank Herbert", "2019", "EPUB", "1.85 MB", "5.0"], ["1490631:f3d208", "Dune", "Frank Herbert", "1999", "EPUB", "731 KB", "5.0"], ["5029480:258154", "Dune", "Frank Herbert", "2015", "EPUB", "776 KB", "5.0"]];
+  function bookTable(books) {
+    const header = ["#", "ID", "Title", "Authors", "Year", "Format", "Size", "Rating"];
+    const classes = ["n", "id", "ti", "au", "n", "green", "sz", "ra"];
+    return '<table class="preview-books"><thead><tr>' + header.map(h => '<th>' + h + '</th>').join("") + '</tr></thead><tbody>' +
+      books.map((book, i) => '<tr>' + [String(i + 1), ...book].map((value, j) => '<td class="' + classes[j] + '">' + esc(value) + '</td>').join("") + '</tr>').join("") + '</tbody></table>';
+  }
+  const popularRows = bookRows.map(b => [b[0], b[1], b[2], "-", "-", "-", "-"]);
+  const jsonBook = {"id": "11735659:7659fb", "hash": "7659fb", "url": "https://z-lib.gl/book/QJW8QbLA3D/dune.html", "name": "Dune", "authors": ["Frank Herbert"], "year": "2019", "extension": "epub", "size": "1.85 MB"};
   const TRANSCRIPTS = {
-    login: P("zlib login --eapi --domain https://z-lib.gd") + BLANK +
-      L("muted", "  Checking https://z-lib.gd …") +
-      '<div>  <span class="green">✓</span> <span class="muted">reachable via EAPI</span></div>' + BLANK +
-      '<div>  <span class="mauve">Email</span>    <span class="title">you@example.com</span></div>' +
-      '<div>  <span class="mauve">Password</span> <span class="muted">••••••••••</span></div>' + BLANK +
-      '<div>  <span class="green">✓</span> <span class="title">Signed in as you@example.com</span></div>' +
-      L("muted", "  session → ~/.config/zlib/session.json") + BLANK +
-      L("muted", "  The password is never written to disk."),
-
-    search: P('zlib search "dune" --ext epub --page 1') + BLANK +
-      '<div class="row hdr"><span class="c-cur"> </span><span class="c-num">' + padR("#", 2) + "</span>" + G +
-      '<span class="c-id">'    + padR("ID", 10)     + "</span>" + G +
-      '<span class="c-title">' + padR("Title", 34)  + "</span>" + G +
-      '<span class="c-auth">'  + padR("Author", 15) + "</span>" + G +
-      '<span class="c-fmt">'   + padR("Fmt", 4)     + "</span>" + G +
-      '<span class="c-size">'  + padL("Size", 9)    + "</span></div>" +
-      '<div class="sep">  ' + "─".repeat(82) + "</div>" +
-      PAGES[0].slice(0, 6).map((b, i) =>
-        '<div class="row"><span class="c-cur">  </span>' +
-        '<span class="c-num n">'    + padR(String(i + 1), 2) + "</span>" + G +
-        '<span class="c-id id">'    + padR(b[0], 10)         + "</span>" + G +
-        '<span class="c-title ti">' + esc(padR(b[1], 34))    + "</span>" + G +
-        '<span class="c-auth au">'  + esc(padR(b[2], 15))    + "</span>" + G +
-        '<span class="c-fmt ' + fmtClass(b[3]) + '">' + padR(b[3], 4) + "</span>" + G +
-        '<span class="c-size sz">'  + padL(b[4], 9) + "</span></div>").join("") + BLANK +
-      L("muted", "  Run it without a query to get the interactive picker") +
-      L("muted", "  at the top of this page. --json prints the same rows") +
-      L("muted", "  for scripts, --full-title stops the truncation."),
-
-    download: P("zlib download 115066162:e9f13b --dir ./books") + BLANK +
-      '<div>  <span class="muted">Dune · Frank Herbert</span></div>' +
-      '<div>  <span class="bar">' + "█".repeat(34) + '</span>  <span class="title">100%</span>  <span class="muted">2.8 / 2.8 MB</span></div>' + BLANK +
-      '<div>  <span class="green">✓</span> <span class="title">books/dune.epub</span></div>' + BLANK +
-      L("muted", "  Ctrl+C cancels, and partial files are removed.") +
-      L("muted", "  Add --send-to-kindle to mail it on as soon as it lands."),
-
-    history: P("zlib history --format epub") + BLANK +
-      '<div class="row hdr"><span class="c-cur"> </span><span class="c-num"># </span>' + G +
-      '<span class="c-id">' + padR("ID", 10) + "</span>" + G +
-      '<span class="c-title">' + padR("Title", 40) + "</span>" + G +
-      '<span class="c-auth">' + padR("Downloaded", 15) + "</span></div>" +
-      '<div class="sep">  ' + "─".repeat(74) + "</div>" +
-      '<div class="row on"><span class="c-cur mauve">❯ </span><span class="c-num n">1 </span>' + G +
-      '<span class="c-id id">' + padR("115066162", 10) + "</span>" + G +
-      '<span class="c-title ti">' + padR("Dune", 40) + "</span>" + G +
-      '<span class="c-auth au">' + padR("2 hours ago", 15) + "</span></div>" +
-      '<div class="row"><span class="c-cur">  </span><span class="c-num n">2 </span>' + G +
-      '<span class="c-id id">' + padR("27462851", 10) + "</span>" + G +
-      '<span class="c-title ti">' + padR("Dune Messiah", 40) + "</span>" + G +
-      '<span class="c-auth au">' + padR("yesterday", 15) + "</span></div>" +
-      '<div class="row"><span class="c-cur">  </span><span class="c-num n">3 </span>' + G +
-      '<span class="c-id id">' + padR("41003377", 10) + "</span>" + G +
-      '<span class="c-title ti">' + padR("The Dune Encyclopedia", 40) + "</span>" + G +
-      '<span class="c-auth au">' + padR("Mar 12", 15) + "</span></div>" + BLANK +
-      L("muted", "  ↑/↓ select   ←/→ page   enter re-download"),
-
-    profile: P("zlib profile") + BLANK +
-      '<div>  <span class="mauve">Account</span>    <span class="title">you@example.com</span></div>' +
-      '<div>  <span class="mauve">Plan</span>       <span class="title">Free</span></div>' +
-      '<div>  <span class="mauve">Today</span>      <span class="bar">' + "█".repeat(6) + "<s>" + "░".repeat(18) + '</s></span>  <span class="title">6 / 10</span></div>' +
-      '<div>  <span class="mauve">Resets</span>     <span class="muted">in 7h 41m</span></div>' + BLANK +
-      L("muted", "  Turns yellow at 3 downloads left, red at 0.") +
-      L("muted", "  --json prints the same numbers for your status bar."),
-
-    kindle: P("zlib kindle send ./dune.epub") + BLANK +
-      '<div>  <span class="mauve">To</span>    <span class="title">you@kindle.com</span></div>' +
-      '<div>  <span class="mauve">From</span>  <span class="title">you@example.com</span></div>' +
-      '<div>  <span class="mauve">SMTP</span>  <span class="muted">smtp.gmail.com:587</span></div>' + BLANK +
-      '<div>  <span class="green">✓</span> <span class="title">Sent dune.epub (2.8 MB)</span></div>' + BLANK +
-      L("muted", "  EPUB · PDF · MOBI · TXT · DOC · DOCX · RTF · HTML") +
-      L("muted", "  The SMTP password lives in ZLIB_SMTP_PWD, never on disk."),
-
-    doctor: P("zlib doctor --eapi") + BLANK +
-      L("muted", "  Probing 8 known domains …") + BLANK +
-      '<div>  <span class="green">healthy</span>           <span class="title">z-lib.gd</span></div>' +
-      '<div>  <span class="green">healthy</span>           <span class="title">1lib.sk</span></div>' +
-      '<div>  <span class="yellow">challenged</span>        <span class="title">z-library.gs</span>  <span class="muted">js proof-of-work</span></div>' +
-      '<div>  <span class="red">diamwall_blocked</span>  <span class="muted">z-lib.fm</span></div>' +
-      '<div>  <span class="red">network_error</span>     <span class="muted">zliba.ru</span></div>' + BLANK +
-      '<div>  <span class="green">✓</span> <span class="title">3 of 8 usable.</span> <span class="muted">export ZLIB_DOMAIN=https://z-lib.gd</span></div>',
-
-    theme: P("zlib theme") + BLANK +
-      '<div>  <span class="mauve">Current</span>  <span class="title">auto</span> <span class="muted">→ mocha (dark terminal)</span></div>' + BLANK +
-      L("muted", "  auto     follow the terminal background") +
-      '<div>  <span class="mauve">mocha</span>    <span class="muted">catppuccin, dark</span></div>' +
-      '<div>  <span class="mauve">latte</span>    <span class="muted">catppuccin, light</span></div>' +
-      '<div>  <span class="mauve">dracula</span>  <span class="muted">high contrast</span></div>' +
-      '<div>  <span class="mauve">tokyo</span>    <span class="muted">tokyo night</span></div>' +
-      '<div>  <span class="mauve">nord</span>     <span class="muted">cool and low contrast</span></div>' +
-      '<div>  <span class="mauve">gruvbox</span>  <span class="muted">warm and retro</span></div>' + BLANK +
-      L("muted", "  zlib theme nord   sets it globally")
+    login: P("zlib login") + BLANK + L("mauve", "Email     you@example.com") + L("muted", "Password  ••••••••••") + BLANK +
+      L("green", "✓ Logged in successfully.") + note("Session saved. The password is not stored.", "会话已保存，不保存密码。"),
+    search: P('zlib search "dune"') + BLANK + L("green", "✓ Found 3 results · Page 1 / 12") + bookTable(bookRows.map(b => [b[0].split(":")[0], ...b.slice(1)])) +
+      note("No query opens the interactive picker. Add --json for scripts.", "不带关键词进入交互模式；--json 输出供脚本使用。"),
+    popular: P("zlib popular") + BLANK + L("green", "✓ Found 3 results") + bookTable(popularRows) + P("zlib popular --json") +
+      note("JSON returns a book array. --full-title shows full table titles.", "JSON 返回书籍数组。--full-title 显示完整标题。"),
+    recommended: P("zlib recommended --json") + BLANK + previewJSON([jsonBook]) +
+      note("Requires login. Omit --json for a table; --full-title keeps titles complete.", "需要登录。不加 --json 时展示表格；--full-title 显示完整标题。"),
+    download: P("zlib download 11735659:7659fb --dir ./books") + BLANK + L("muted", "Dune · Frank Herbert") +
+      '<div><span class="bar">' + "█".repeat(24) + '</span> 100%  2.8 / 2.8 MB</div>' + BLANK + L("green", "✓ Saved to: books/dune.epub") +
+      note("Add --send-to-kindle to send the downloaded file.", "加 --send-to-kindle 可在下载后投递 Kindle。"),
+    history: P("zlib history --json") + BLANK + previewJSON({items:[{id:jsonBook.id, name:"Dune", extension:"epub", size:"2.8 MB", date:"2026-10-06"}], page:1, total_pages:1}) +
+      note("Without flags, history opens an interactive browser.", "不带参数时进入交互式历史浏览。"),
+    profile: P("zlib profile") + BLANK + L("mauve", "Daily Downloads") + BLANK +
+      '<div><span class="bar">' + "█".repeat(6) + '<s>' + "░".repeat(4) + '</s></span>  6 / 10</div>' + BLANK +
+      L("green", "Remaining   4") + L("muted", "Resets at   2026-10-07 00:00") + note("Add --json for daily quota values.", "加 --json 可读取每日配额数据。"),
+    kindle: P("zlib kindle send ./dune.epub") + BLANK + L("green", "✓ Sent dune.epub to you@kindle.com") +
+      note("Configure addresses and SMTP with zlib kindle first.", "先运行 zlib kindle 配置邮箱和 SMTP。"),
+    endpoint: P("zlib endpoint") + BLANK + L("title", "Mode         auto") + L("title", "Endpoint     https://z-lib.gl") +
+      L("muted", "Source       last_good") + L("muted", "Backend      eapi") + L("muted", "Latency      182ms") + L("muted", "Last success 2m ago") +
+      note("Reads local state. --domain or ZLIB_DOMAIN pins an endpoint.", "只读本地状态。--domain 或 ZLIB_DOMAIN 会固定 endpoint。"),
+    doctor: P("zlib doctor") + BLANK +
+      '<table class="preview-books"><thead><tr><th>Domain</th><th>Mode</th><th>Status</th><th>HTTP</th></tr></thead><tbody>' +
+      '<tr><td>https://z-lib.gd</td><td>html</td><td class="yellow">challenged</td><td>503</td></tr>' +
+      '<tr><td>https://z-lib.gd</td><td>eapi</td><td class="green">healthy</td><td>200</td></tr>' +
+      '<tr><td>https://z-lib.fm</td><td>html</td><td class="red">diamwall_blocked</td><td>517</td></tr>' +
+      '<tr><td>https://z-lib.fm</td><td>eapi</td><td class="red">diamwall_blocked</td><td>517</td></tr></tbody></table>' +
+      note("Checks HTML and EAPI without login. Add --json for scripts.", "无需登录，同时检查 HTML 和 EAPI；支持 --json。"),
+    theme: P("zlib theme nord") + BLANK + L("green", "✓ Theme set to nord.") +
+      L("muted", "auto · mocha · latte · dracula · tokyo · nord · gruvbox")
   };
-
   const cmdOut = $("#cmdOut"), cmdTitle = $("#cmdTitle");
-  const showCmd = k => {
-    cmdOut.innerHTML = TRANSCRIPTS[k];
-    cmdTitle.textContent = "zlib " + k;
-    $$("[data-cmd]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.cmd === k)));
+  const showCmd = key => {
+    cmdOut.innerHTML = TRANSCRIPTS[key];
+    cmdTitle.textContent = "zlib " + key;
+    $$("[data-cmd]").forEach(button => button.setAttribute("aria-selected", String(button.dataset.cmd === key)));
   };
-  $$("[data-cmd]").forEach(b => b.addEventListener("click", () => showCmd(b.dataset.cmd)));
+  $$("[data-cmd]").forEach(button => button.addEventListener("click", () => showCmd(button.dataset.cmd)));
   showCmd("search");
-
-  /* ── access panel ────────────────────────────────────── */
   $("#doctorOut").innerHTML = TRANSCRIPTS.doctor;
 
   /* ── theme swatches: the real palettes from the source ─ */

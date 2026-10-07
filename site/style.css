@@ -1,9 +1,8 @@
 /* ─────────────────────────────────────────────────────────────
    zlib.heartleo.dev
-   Palette: Catppuccin Latte (light) / Catppuccin Mocha (dark) —
-   the same two themes the CLI ships as `zlib theme latte|mocha`.
-   Terminal chrome follows the page theme through the --t-* tokens, so
-   the replicas show the palette the CLI would actually render.
+   Based on Catppuccin Latte (light) / Mocha (dark), also shipped by the CLI.
+   Preview text colors are adjusted for contrast. Terminal chrome follows
+   the page theme through the --t-* tokens.
    Type: Literata (an ebook face) + JetBrains Mono (a terminal face).
    ───────────────────────────────────────────────────────────── */
 
@@ -12,17 +11,17 @@
 :root{
   /* Catppuccin Latte */
   --base:#eff1f5; --mantle:#e6e9ef; --card:#ffffff;
-  --text:#4c4f69; --strong:#2b2d3f; --subtext:#6c6f85; --faint:#8c8fa1;
+  --text:#4c4f69; --strong:#2b2d3f; --subtext:#606378; --faint:#606378;
   --rule:#ccd0da; --rule-soft:#dce0e8;
-  --accent:#8839ef; --accent-ink:#ffffff; --accent-wash:rgba(136,57,239,.08);
-  --green:#40a02b; --yellow:#df8e1d; --red:#d20f39; --blue:#1e66f5; --teal:#179299;
+  --accent:#7531cf; --accent-ink:#ffffff; --accent-wash:rgba(136,57,239,.08);
+  --green:#287b19; --yellow:#9d5d00; --red:#d20f39; --blue:#1e66f5; --teal:#179299;
   --shadow:0 1px 2px rgba(76,79,105,.06), 0 12px 32px -18px rgba(76,79,105,.28);
 
   /* Terminal chrome — Catppuccin Latte, matching `zlib theme latte` */
   --t-bg:#e6e9ef; --t-base:#eff1f5; --t-surface:#ccd0da; --t-overlay:#bcc0cc;
-  --t-text:#4c4f69; --t-title:#7287fd; --t-muted:#7c7f93; --t-edge:#dce0e8;
-  --t-mauve:#8839ef; --t-blue:#1e66f5; --t-green:#40a02b;
-  --t-yellow:#df8e1d; --t-red:#d20f39; --t-teal:#179299;
+  --t-text:#4c4f69; --t-title:#4c4f69; --t-muted:#64677c; --t-edge:#dce0e8;
+  --t-mauve:#7531cf; --t-blue:#154bb7; --t-green:#287b19;
+  --t-yellow:#9d5d00; --t-red:#d20f39; --t-teal:#106e75;
 
   --serif:"Literata","Songti SC","Noto Serif CJK SC","Source Han Serif SC","Noto Serif SC",ui-serif,Georgia,serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"PingFang SC",monospace;
@@ -35,7 +34,7 @@
 html[data-theme="mocha"]{
   /* Catppuccin Mocha */
   --base:#1e1e2e; --mantle:#181825; --card:#252539;
-  --text:#cdd6f4; --strong:#eff1f8; --subtext:#a6adc8; --faint:#7f849c;
+  --text:#cdd6f4; --strong:#eff1f8; --subtext:#a6adc8; --faint:#a6adc8;
   --rule:#313244; --rule-soft:#292a3d;
   --accent:#cba6f7; --accent-ink:#1e1e2e; --accent-wash:rgba(203,166,247,.12);
   --green:#a6e3a1; --yellow:#f9e2af; --red:#f38ba8; --blue:#89b4fa; --teal:#94e2d5;
@@ -43,12 +42,12 @@ html[data-theme="mocha"]{
 
   /* Terminal chrome — Catppuccin Mocha, matching `zlib theme mocha` */
   --t-bg:#181825; --t-base:#1e1e2e; --t-surface:#313244; --t-overlay:#45475a;
-  --t-text:#cdd6f4; --t-title:#b4befe; --t-muted:#6c7086; --t-edge:#11111b;
+  --t-text:#cdd6f4; --t-title:#b4befe; --t-muted:#a6adc8; --t-edge:#11111b;
   --t-mauve:#cba6f7; --t-blue:#89b4fa; --t-green:#a6e3a1;
   --t-yellow:#f9e2af; --t-red:#f38ba8; --t-teal:#94e2d5;
 }
 
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:82px}
 body{
   margin:0; background:var(--base); color:var(--text);
   font-family:var(--serif); font-size:17px; line-height:1.65;
@@ -121,11 +120,13 @@ h2.sec{font-size:clamp(1.7rem,3.4vw,2.5rem);margin-bottom:.6rem}
   display:flex;border:1px solid var(--rule);border-radius:5px;overflow:hidden;
   font-family:var(--mono);font-size:.72rem;background:var(--card);
 }
-.seg button{
+.seg button,.seg a{
   appearance:none;border:0;background:none;color:var(--faint);cursor:pointer;
   padding:.36rem .6rem;font:inherit;line-height:1.4;transition:color .15s,background .15s;
 }
 .seg button[aria-pressed="true"]{background:var(--accent-wash);color:var(--accent)}
+.seg a{text-decoration:none;display:inline-flex;align-items:center}
+.seg button[aria-current="true"]{background:var(--accent-wash);color:var(--accent)}
 .seg button:hover{color:var(--strong)}
 .iconbtn{
   display:grid;place-items:center;width:31px;height:31px;flex:none;cursor:pointer;
@@ -217,7 +218,8 @@ h1 .z{color:var(--accent);font-style:italic;font-weight:500}
 .hdr{color:var(--t-mauve);font-weight:700}
 .sep{color:var(--t-surface)}
 .row.on{background:var(--t-surface)}
-.row.on .c-cur{color:var(--t-mauve);font-weight:700}
+.row.on>*{color:var(--t-text)}
+.row.on .c-cur{color:var(--t-text);font-weight:700}
 .n{color:var(--t-muted)}.id{color:var(--t-blue)}.ti{color:var(--t-title)}
 .au{color:var(--t-muted)}.sz{color:var(--t-muted)}.ra{color:var(--t-green)}
 .f-epub{color:var(--t-green)}.f-pdf{color:var(--t-blue)}.f-mobi{color:var(--t-yellow)}.f-fb2{color:var(--t-mauve)}
@@ -245,7 +247,8 @@ h1 .z{color:var(--accent);font-style:italic;font-weight:500}
 .pane .note{color:var(--faint);font-size:.85rem;margin-top:.85rem;font-family:var(--mono);line-height:1.6}
 
 /* ── commands ─────────────────────────────────────────── */
-.cmd-grid{display:grid;grid-template-columns:minmax(0,.62fr) minmax(0,1.38fr);gap:clamp(28px,4vw,56px);align-items:start}
+.cmd-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(24px,3vw,40px);align-items:start}
+.cmd-grid>.term{position:sticky;top:82px}
 .cmd-list{border-top:1px solid var(--rule-soft)}
 .cmd-list button{
   appearance:none;font:inherit;width:100%;text-align:left;cursor:pointer;
@@ -254,7 +257,7 @@ h1 .z{color:var(--accent);font-style:italic;font-weight:500}
   color:var(--subtext);transition:.15s;position:relative;
 }
 .cmd-list button:hover{color:var(--strong)}
-.cmd-list button .k{font-family:var(--mono);font-size:.86rem;color:var(--strong);flex:none;width:8.5ch}
+.cmd-list button .k{font-family:var(--mono);font-size:.86rem;color:var(--strong);flex:none;width:12ch}
 .cmd-list button .d{font-size:.9rem;line-height:1.4}
 .cmd-list button[aria-selected="true"]{color:var(--strong)}
 .cmd-list button[aria-selected="true"] .k{color:var(--accent)}
@@ -359,3 +362,23 @@ footer a:hover{color:var(--accent)}
 html[data-lang="en"] [data-i18n="en"]{display:revert}
 html[data-lang="zh"] [data-i18n="zh"]{display:revert}
 html[data-lang="zh"] body{font-size:16.5px}
+
+/* Setup notes and preview captions are separate from CLI output. */
+.setup-note{font-size:.9rem;color:var(--subtext);margin:1.2rem 0}
+.setup-note code{font-family:var(--mono);font-size:.9em;color:var(--accent)}
+.demo-caption{font-family:var(--serif);font-size:.8rem;color:var(--t-text);padding:.7rem .95rem;border-top:1px solid var(--t-surface);margin:0}
+.preview-note{font-family:var(--serif);color:var(--t-text);font-size:.85rem;margin-top:1rem;white-space:normal;max-width:48ch}
+.preview-json{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;margin:.8rem 0 0;color:var(--t-text)}
+.preview-books{border-collapse:collapse;margin:.9rem 0 1.2rem;white-space:nowrap;font:inherit;width:max-content}
+.preview-books th{text-align:left;color:var(--t-mauve);padding:0 1.1rem .55rem 0;border-bottom:1px solid var(--t-surface)}
+.preview-books td{padding:.35rem 1.1rem 0 0}
+.preview-books td:last-child,.preview-books th:last-child{padding-right:0}
+.preview-books td:first-child{color:var(--t-text)}
+@media (max-width:960px){
+  .cmd-grid>.term{position:static}
+  .cmd-list{display:flex;gap:.45rem;overflow-x:auto;border-top:0;padding:.25rem .2rem .8rem;scrollbar-width:thin}
+  .cmd-list button{width:auto;flex:none;flex-direction:row;border:1px solid var(--rule);border-radius:5px;padding:.55rem .7rem}
+  .cmd-list button[aria-selected="true"]{background:var(--accent-wash);border-color:var(--accent)}
+  .cmd-list button .k{width:auto}
+  .cmd-list button .d{display:none}
+}

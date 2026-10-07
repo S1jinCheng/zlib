@@ -1,0 +1,139 @@
+package cli
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
+	zlib "github.com/heartleo/zlib"
+)
+
+// Replay the original single-input prompt, then the real search/download models.
+func TestRecordSearchDemo(t *testing.T) {
+	type searchPage struct {
+		Success    int              `json:"success"`
+		Books      []map[string]any `json:"books"`
+		Pagination map[string]int   `json:"pagination"`
+	}
+	payload, err := os.ReadFile(os.Getenv("ZLIB_DEMO_EPUB"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pages := make(map[string]searchPage)
+	books := make(map[string]map[string]any)
+	for i, name := range []string{"search.json", "search-page2.json"} {
+		data, err := os.ReadFile(filepath.Join(filepath.Dir(os.Getenv("ZLIB_DEMO_FIXTURE")), name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var page searchPage
+		if err := json.Unmarshal(data, &page); err != nil {
+			t.Fatal(err)
+		}
+		pages[strconv.Itoa(i+1)] = page
+		for _, book := range page.Books {
+			id := strconv.FormatInt(int64(book["id"].(float64)), 10)
+			books[id+"/"+book["hash"].(string)] = book
+		}
+	}
+	record := func(event string) {
+		f, err := os.OpenFile(os.Getenv("ZLIB_DEMO_EVENTS"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer f.Close()
+		f.WriteString(event + "\n")
+	}
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/eapi/book/search":
+			r.ParseForm()
+			page := r.FormValue("page")
+			result, ok := pages[page]
+			if !ok {
+				http.NotFound(w, r)
+				return
+			}
+			record("search:" + page)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(result)
+		case strings.HasPrefix(r.URL.Path, "/eapi/book/"):
+			ref := strings.TrimPrefix(r.URL.Path, "/eapi/book/")
+			file := strings.HasSuffix(ref, "/file")
+			if file {
+				ref = strings.TrimSuffix(ref, "/file")
+			}
+			book, ok := books[ref]
+			if !ok {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			if file {
+				json.NewEncoder(w).Encode(map[string]any{"success": 1, "file": map[string]string{"downloadLink": server.URL + "/dune.epub"}})
+			} else {
+				json.NewEncoder(w).Encode(map[string]any{"success": 1, "book": book})
+			}
+		case r.URL.Path == "/dune.epub":
+			// A generated EPUB sample; no real book file is involved.
+			w.Header().Set("Content-Type", "application/epub+zip")
+			w.Header().Set("Content-Disposition", `attachment; filename="dune.epub"`)
+			w.Header().Set("Content-Length", strconv.Itoa(len(payload)))
+			chunkSize := (len(payload) + 39) / 40
+			for start := 0; start < len(payload); start += chunkSize {
+				end := start + chunkSize
+				if end > len(payload) {
+					end = len(payload)
+				}
+				if _, err := w.Write(payload[start:end]); err != nil {
+					return
+				}
+				w.(http.Flusher).Flush()
+				time.Sleep(100 * time.Millisecond)
+			}
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	c := zlib.NewClient()
+	c.SetDomain(server.URL)
+	c.SetMode(zlib.ClientModeEAPI)
+	c.SetCookies(map[string]string{"remix_userid": "demo", "remix_userkey": "demo"})
+	resolveTheme()
+	var query string
+	form := huh.NewForm(huh.NewGroup(huh.NewInput().Title("Search books").Placeholder("enter title, author, or ISBN...").Value(&query))).WithTheme(huhTheme())
+	if err := form.Run(); err != nil {
+		t.Fatal(err)
+	}
+	model, err := tea.NewProgram(newSearchSelectModel(query, c, nil, false)).Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	selected := model.(searchSelectModel)
+	if selected.err != nil {
+		t.Fatal(selected.err)
+	}
+	if selected.selectedID == "" {
+		t.Fatal("no book selected")
+	}
+	record("selected:" + selected.selectedID)
+	if err := runDownload(newDownloadModel(selected.selectedID, os.Getenv("ZLIB_DEMO_DOWNLOAD_DIR"), c), false); err != nil {
+		t.Fatal(err)
+	}
+	record("downloaded")
+	record("saved:" + tildePath(filepath.Join(os.Getenv("ZLIB_DEMO_DOWNLOAD_DIR"), "dune.epub")))
+	// Keep the completed download visible until VHS ends, without test-runner text.
+	select {}
+}
