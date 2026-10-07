@@ -14,7 +14,7 @@ func (c *Client) getLimitsEAPI() (DownloadLimit, error) {
 	var result struct {
 		Success int    `json:"success"`
 		Error   string `json:"error"`
-		User    struct {
+		User    *struct {
 			DownloadsToday      any `json:"downloads_today"`
 			DownloadsLimit      any `json:"downloads_limit"`
 			DailyDownloadsCount any `json:"dailyDownloadsCount"`
@@ -22,7 +22,7 @@ func (c *Client) getLimitsEAPI() (DownloadLimit, error) {
 		} `json:"user"`
 	}
 	if err := decodeEAPIJSON(body, &result); err != nil {
-		return DownloadLimit{}, fmt.Errorf("zlibrary: invalid EAPI profile response: %w", err)
+		return DownloadLimit{}, fmt.Errorf("%w: invalid EAPI profile response: %v", ErrEndpointResponse, err)
 	}
 	if result.Success != 1 {
 		if result.Error == "" {
@@ -31,6 +31,9 @@ func (c *Client) getLimitsEAPI() (DownloadLimit, error) {
 		return DownloadLimit{}, fmt.Errorf("zlibrary: EAPI profile failed: %s", result.Error)
 	}
 
+	if result.User == nil {
+		return DownloadLimit{}, fmt.Errorf("%w: missing EAPI profile", ErrEndpointResponse)
+	}
 	daily := eapiInt(result.User.DownloadsToday)
 	if daily == 0 {
 		daily = eapiInt(result.User.DailyDownloadsCount)
@@ -65,7 +68,7 @@ func (c *Client) downloadHistoryEAPI(page int) (DownloadHistoryResult, error) {
 		Pagination eapiPagination `json:"pagination"`
 	}
 	if err := decodeEAPIJSON(body, &result); err != nil {
-		return DownloadHistoryResult{}, fmt.Errorf("zlibrary: invalid EAPI history response: %w", err)
+		return DownloadHistoryResult{}, fmt.Errorf("%w: invalid EAPI history response: %v", ErrEndpointResponse, err)
 	}
 	if result.Success != 1 {
 		if result.Error == "" {
@@ -74,6 +77,9 @@ func (c *Client) downloadHistoryEAPI(page int) (DownloadHistoryResult, error) {
 		return DownloadHistoryResult{}, fmt.Errorf("zlibrary: EAPI history failed: %s", result.Error)
 	}
 
+	if result.Books == nil {
+		return DownloadHistoryResult{}, fmt.Errorf("%w: missing EAPI history", ErrEndpointResponse)
+	}
 	items := make([]DownloadHistoryItem, 0, len(result.Books))
 	for _, raw := range result.Books {
 		book := c.mapEAPIBook(raw)

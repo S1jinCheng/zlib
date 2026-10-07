@@ -29,7 +29,7 @@ func TestFetchBookDetailsIsRaceFreeUnderChallenge(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	c.SetCookies(map[string]string{"remix_userid": "1", "remix_userkey": "k"})
 
 	ids := make([]string, 0, 12)
@@ -56,7 +56,7 @@ func TestFetchBookDetailsSkipsRestWhenWarmupFails(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	c.SetCookies(map[string]string{"remix_userid": "1", "remix_userkey": "k"})
 
 	ids := []string{"1", "2", "3", "4", "5"}
@@ -71,7 +71,7 @@ func TestFetchBookDetailsSkipsRestWhenWarmupFails(t *testing.T) {
 }
 
 func TestCookieAccessorsAreConcurrentSafe(t *testing.T) {
-	c := NewClient(WithDomain("https://example.com"))
+	c := newHTMLTestClient(WithDomain("https://example.com"))
 	c.SetCookies(map[string]string{"remix_userid": "1"})
 
 	done := make(chan struct{})
@@ -94,7 +94,7 @@ func TestCookieAccessorsAreConcurrentSafe(t *testing.T) {
 // Cookies must hand back a copy: a caller mutating the result used to corrupt
 // the client's own cookie map.
 func TestCookiesReturnsCopy(t *testing.T) {
-	c := NewClient(WithDomain("https://example.com"))
+	c := newHTMLTestClient(WithDomain("https://example.com"))
 	c.SetCookies(map[string]string{"remix_userid": "1"})
 
 	c.Cookies()["remix_userid"] = "tampered"

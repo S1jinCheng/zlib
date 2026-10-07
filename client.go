@@ -2,6 +2,7 @@ package zlib
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -43,6 +44,8 @@ var (
 )
 
 type Client struct {
+	router      *endpointRouter
+	ctx         context.Context
 	httpClient  *http.Client
 	domain      string
 	loginDomain string
@@ -69,7 +72,9 @@ const (
 func NewClient(opts ...ClientOption) *Client {
 	jar, _ := cookiejar.New(nil)
 	domain := CurrentDefaultDomain()
+	manual := strings.TrimSpace(os.Getenv(EnvDomain)) != "" || defaultDomainOverride != ""
 	c := &Client{
+		ctx: context.Background(),
 		httpClient: &http.Client{
 			Jar:           jar,
 			Timeout:       defaultTimeout,
@@ -78,7 +83,8 @@ func NewClient(opts ...ClientOption) *Client {
 		domain:      domain,
 		loginDomain: buildLoginURL(domain),
 		cookies:     make(map[string]string),
-		mode:        ClientModeHTML,
+		mode:        ClientModeEAPI,
+		router:      &endpointRouter{policy: EndpointPolicy{Manual: manual}, info: EndpointInfo{URL: domain, Source: "seed", Manual: manual}},
 		// Read at construction, not package init: the CLI loads .env after
 		// all init functions have run.
 		downloadRetries: resolveDownloadRetries(os.Getenv(EnvRetries)),
@@ -88,6 +94,9 @@ func NewClient(opts ...ClientOption) *Client {
 	if proxyURL := strings.TrimSpace(os.Getenv(EnvProxy)); proxyURL != "" {
 		WithProxy(proxyURL)(c)
 	}
+	if manual {
+		c.router.info.Source = "environment"
+	}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -95,6 +104,16 @@ func NewClient(opts ...ClientOption) *Client {
 }
 
 type ClientOption func(*Client)
+
+// WithContext applies cancellation to high-level operations without a context
+// argument. DownloadWithContext still uses its explicitly supplied context.
+func WithContext(ctx context.Context) ClientOption {
+	return func(c *Client) {
+		if ctx != nil {
+			c.ctx = ctx
+		}
+	}
+}
 
 func WithDomain(domain string) ClientOption {
 	return func(c *Client) {
@@ -133,6 +152,16 @@ func WithOnion(proxyURL string) ClientOption {
 }
 
 func (c *Client) Login(email, password string) error {
+	if c.router != nil {
+		_, err := runOperation(c, context.Background(), func(d *Client) (struct{}, error) { return struct{}{}, d.Login(email, password) }, func(d *Client, cause error) (struct{}, error) {
+			return struct{}{}, d.loginEAPIViaHTML(email, password, cause.Error())
+		})
+		return err
+	}
+	if c.mode == ClientModeEAPI {
+		return c.LoginEAPI(email, password)
+	}
+
 	data := url.Values{
 		"isModal":       {"true"},
 		"email":         {email},
@@ -144,34 +173,37 @@ func (c *Client) Login(email, password string) error {
 		"gg_json_mode":  {"1"},
 	}
 
-	req, err := http.NewRequest("POST", c.loginDomain, strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(c.ctx, "POST", c.loginDomain, strings.NewReader(data.Encode()))
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrLoginFailed, err)
+		return fmt.Errorf("%w: %w", ErrLoginFailed, err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", defaultUserAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrLoginFailed, err)
+		return fmt.Errorf("%w: %w", ErrLoginFailed, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrLoginFailed, err)
+		return fmt.Errorf("%w: %w", ErrLoginFailed, err)
 	}
 	if err := validateResponse(resp, body); err != nil {
 		return fmt.Errorf("%w: %w", ErrLoginFailed, err)
 	}
 
 	var result struct {
-		Response struct {
+		Response *struct {
 			ValidationError interface{} `json:"validationError"`
 		} `json:"response"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
-		return fmt.Errorf("%w: invalid response: %v", ErrLoginFailed, err)
+		return fmt.Errorf("%w: %w: invalid HTML login response: %v", ErrLoginFailed, ErrEndpointResponse, err)
+	}
+	if result.Response == nil {
+		return fmt.Errorf("%w: %w: missing HTML login response", ErrLoginFailed, ErrEndpointResponse)
 	}
 	if result.Response.ValidationError != nil {
 		return fmt.Errorf("%w: %v", ErrLoginFailed, result.Response.ValidationError)
@@ -197,14 +229,26 @@ func (c *Client) Logout() {
 }
 
 func (c *Client) Domain() string {
+	if c.router != nil {
+		c.router.mu.Lock()
+		defer c.router.mu.Unlock()
+	}
 	return c.domain
 }
 
 func (c *Client) Mode() ClientMode {
+	if c.router != nil {
+		c.router.mu.Lock()
+		defer c.router.mu.Unlock()
+	}
 	return c.mode
 }
 
 func (c *Client) SetMode(mode ClientMode) {
+	if c.router != nil {
+		c.router.mu.Lock()
+		defer c.router.mu.Unlock()
+	}
 	if mode == ClientModeEAPI {
 		c.mode = ClientModeEAPI
 		return
@@ -213,11 +257,19 @@ func (c *Client) SetMode(mode ClientMode) {
 }
 
 func (c *Client) SetDomain(domain string) {
+	if c.router != nil {
+		c.router.mu.Lock()
+		defer c.router.mu.Unlock()
+	}
 	domain = normalizeDomain(domain)
 	if domain == "" {
 		domain = CurrentDefaultDomain()
 	}
 
+	if c.router != nil {
+		c.router.policy.Manual = true
+		c.router.info = EndpointInfo{URL: domain, Source: "flag", Manual: true}
+	}
 	c.domain = domain
 	c.loginDomain = buildLoginURL(domain)
 
@@ -418,7 +470,9 @@ func (c *Client) get(rawURL string) (string, error) {
 		}
 		c.setCookie("c_token", token)
 
-		time.Sleep(wait)
+		if err := sleepContext(c.ctx, wait); err != nil {
+			return "", err
+		}
 		if wait *= 2; wait > challengeRetryMaxWait {
 			wait = challengeRetryMaxWait
 		}
@@ -429,7 +483,7 @@ func (c *Client) get(rawURL string) (string, error) {
 // interstitial HTML, when the server answered with the JS challenge instead of
 // the requested page.
 func (c *Client) fetchOnce(rawURL string) (html string, challenged bool, err error) {
-	req, err := http.NewRequest("GET", rawURL, nil)
+	req, err := http.NewRequestWithContext(c.ctx, "GET", rawURL, nil)
 	if err != nil {
 		return "", false, err
 	}

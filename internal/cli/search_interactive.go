@@ -236,13 +236,19 @@ func (m searchSelectModel) View() string {
 	// Column widths
 	const (
 		colNum    = 2
-		colID     = 10
 		colTitle  = 40
 		colAuthor = 15
 		colFmt    = 4
 		colSize   = 10
 		colRating = 6
 	)
+
+	colID := 10
+	for _, book := range m.books {
+		if width := runewidth.StringWidth(searchDisplayID(book)); width > colID {
+			colID = width
+		}
+	}
 
 	// Title column width: fixed by default, widened to the longest
 	// title when --full-title is set so nothing gets truncated.
@@ -255,7 +261,7 @@ func (m searchSelectModel) View() string {
 		}
 		// Cap to the terminal width so the table doesn't wrap and break
 		// alignment. fixedCols is the width of everything except the title.
-		const fixedCols = 61
+		fixedCols := 51 + colID
 		if maxTitle := m.width - fixedCols; m.width > 0 && titleWidth > maxTitle && maxTitle >= colTitle {
 			titleWidth = maxTitle
 		}
@@ -279,7 +285,7 @@ func (m searchSelectModel) View() string {
 	selectedBg := lipgloss.NewStyle().Background(currentTheme.Surface)
 
 	for i, book := range m.books {
-		id := bookCommandID(book)
+		id := searchDisplayID(book)
 		if id == "" {
 			id = "-"
 		}

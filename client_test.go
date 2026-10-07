@@ -28,7 +28,7 @@ func TestLogin_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient()
+	c := newHTMLTestClient()
 	c.domain = server.URL
 	c.loginDomain = buildLoginURL(server.URL)
 
@@ -58,7 +58,7 @@ func TestFetchBook(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient()
+	c := newHTMLTestClient()
 	c.domain = server.URL
 	c.loggedIn = true
 
@@ -89,7 +89,7 @@ func TestFetchBookRejectsRedirectToHome(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient()
+	c := newHTMLTestClient()
 	c.domain = server.URL
 	c.loggedIn = true
 
@@ -109,7 +109,7 @@ func TestLogin_ValidationError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient()
+	c := newHTMLTestClient()
 	c.domain = server.URL
 	c.loginDomain = buildLoginURL(server.URL)
 
@@ -126,7 +126,7 @@ func TestLoginReturnsBotProtectionError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	err := c.Login("test@example.com", "testpassword")
 	if !errors.Is(err, ErrLoginFailed) {
 		t.Fatalf("Login() error = %v, want ErrLoginFailed", err)
@@ -151,7 +151,7 @@ func TestGetReturnsBotProtectionErrorBeforeParsing(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	_, err := c.get(server.URL + "/s/test")
 	if !errors.Is(err, ErrBotProtection) {
 		t.Fatalf("get() error = %v, want ErrBotProtection", err)
@@ -164,7 +164,7 @@ func TestGetRecognizesDiamWallBodyWithSuccessStatus(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	_, err := c.get(server.URL + "/s/test")
 	if !errors.Is(err, ErrBotProtection) {
 		t.Fatalf("get() error = %v, want ErrBotProtection", err)
@@ -178,7 +178,7 @@ func TestGetRejectsUnexpectedHTTPStatus(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	_, err := c.get(server.URL + "/s/test")
 	var statusErr *HTTPStatusError
 	if !errors.As(err, &statusErr) {
@@ -195,7 +195,7 @@ func TestGetReportsRedirectLoop(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	_, err := c.get(server.URL + "/loop")
 	if !errors.Is(err, ErrRedirectLoop) {
 		t.Fatalf("get() error = %v, want ErrRedirectLoop", err)
@@ -235,7 +235,7 @@ func TestGetSolvesChallengeServedWith503(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	html, err := c.get(server.URL + "/s/test")
 	if err != nil {
 		t.Fatalf("get() error = %v, want the challenge to be solved", err)
@@ -261,7 +261,7 @@ func TestGetGivesUpAfterChallengeBudget(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	_, err := c.get(server.URL + "/s/test")
 	if !errors.Is(err, ErrChallengeFailed) {
 		t.Fatalf("get() error = %v, want ErrChallengeFailed", err)
@@ -280,7 +280,7 @@ func TestGetAllowsContentMentioningDiamWall(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	html, err := c.get(server.URL + "/s/diamwall")
 	if err != nil {
 		t.Fatalf("get() error = %v, want the page to be returned", err)
@@ -297,14 +297,14 @@ func TestGetDetectsDiamWallStatus513(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := NewClient(WithDomain(server.URL))
+	c := newHTMLTestClient(WithDomain(server.URL))
 	if _, err := c.get(server.URL + "/s/test"); !errors.Is(err, ErrBotProtection) {
 		t.Fatalf("get() error = %v, want ErrBotProtection", err)
 	}
 }
 
 func TestWithDomain(t *testing.T) {
-	c := NewClient(WithDomain("https://example.com"))
+	c := newHTMLTestClient(WithDomain("https://example.com"))
 
 	if c.Domain() != "https://example.com" {
 		t.Fatalf("Domain() = %q, want %q", c.Domain(), "https://example.com")
@@ -317,7 +317,7 @@ func TestWithDomain(t *testing.T) {
 func TestNewClientPrefersExplicitProxyOverEnv(t *testing.T) {
 	t.Setenv(EnvProxy, "http://127.0.0.1:7890")
 
-	client := NewClient(WithProxy("http://127.0.0.1:1080"))
+	client := newHTMLTestClient(WithProxy("http://127.0.0.1:1080"))
 
 	transport, ok := client.httpClient.Transport.(*http.Transport)
 	if !ok || transport == nil {
@@ -340,7 +340,7 @@ func TestNewClientPrefersExplicitProxyOverEnv(t *testing.T) {
 func TestNewClientIgnoresEmptyExplicitProxy(t *testing.T) {
 	t.Setenv(EnvProxy, "http://127.0.0.1:7890")
 
-	client := NewClient(WithProxy(""))
+	client := newHTMLTestClient(WithProxy(""))
 
 	transport, ok := client.httpClient.Transport.(*http.Transport)
 	if !ok || transport == nil {
@@ -361,7 +361,7 @@ func TestNewClientIgnoresEmptyExplicitProxy(t *testing.T) {
 }
 
 func TestWithProxyPreservesDefaultTransportSettings(t *testing.T) {
-	client := NewClient(WithProxy("http://127.0.0.1:7890"))
+	client := newHTMLTestClient(WithProxy("http://127.0.0.1:7890"))
 
 	transport, ok := client.httpClient.Transport.(*http.Transport)
 	if !ok || transport == nil {
@@ -416,4 +416,13 @@ func TestCheckRedirectStripsEAPICredentialsOffAllowlist(t *testing.T) {
 	if got := req.Header.Get("remix-userid"); got != "" {
 		t.Errorf("checkRedirect() forwarded remix-userid to a foreign host: %q", got)
 	}
+}
+
+func newHTMLTestClient(opts ...ClientOption) *Client {
+	c := NewClient(opts...)
+	c.SetMode(ClientModeHTML)
+	// Existing HTML fixtures set c.domain directly after constructing the client.
+	// They are manual endpoints and must never trigger real mirror recovery.
+	c.router.policy.Manual = true
+	return c
 }

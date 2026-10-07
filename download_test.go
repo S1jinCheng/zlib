@@ -62,7 +62,7 @@ func downloadServer(t *testing.T, failures int, failStatus int) (*httptest.Serve
 }
 
 func loggedInClient() *Client {
-	c := NewClient()
+	c := newHTMLTestClient()
 	c.loggedIn = true
 	return c
 }

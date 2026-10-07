@@ -2,6 +2,7 @@ package zlib
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,6 +33,7 @@ const (
 	DomainStatusHTTPError       DomainStatus = "http_error"
 	DomainStatusNetworkError    DomainStatus = "network_error"
 	DomainStatusInvalidDomain   DomainStatus = "invalid_domain"
+	DomainStatusInvalidResponse DomainStatus = "invalid_response"
 )
 
 // DomainCheck contains the result of a read-only unauthenticated domain probe.
@@ -49,6 +51,12 @@ type DomainProbeOptions struct {
 	ProxyURL string
 	// Path selects an endpoint below each candidate origin. Empty probes root.
 	Path string
+	// RequireEAPI checks semantic success, rather than just a reachable HTTP 200.
+	RequireEAPI bool
+	// RequireAllowedDomain validates every unauthenticated redirect target.
+	RequireAllowedDomain bool
+	// Transport allows callers to preserve their proxy and test transport.
+	Transport http.RoundTripper
 }
 
 // KnownDomains returns the domains checked by the CLI doctor command.
@@ -118,6 +126,9 @@ func ProbeDomainWithOptions(ctx context.Context, domain string, opts DomainProbe
 	}
 	client := NewClient(clientOptions...).httpClient
 	client.Timeout = domainProbeTimeout
+	if opts.Transport != nil {
+		client.Transport = opts.Transport
+	}
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
@@ -140,6 +151,13 @@ func ProbeDomainWithOptions(ctx context.Context, domain string, opts DomainProbe
 	seen := make(map[string]struct{})
 	for redirects := 0; ; redirects++ {
 		currentURL := current.String()
+		if opts.RequireAllowedDomain {
+			if _, err := ParseAllowedDomain(current.Scheme + "://" + current.Host); err != nil || current.User != nil {
+				result.Status = DomainStatusInvalidDomain
+				result.Detail = "probe redirected outside the allowed HTTPS origins"
+				return result
+			}
+		}
 		result.FinalURL = currentURL
 		if _, ok := seen[currentURL]; ok {
 			return blockedOrLoop("redirected to a previously visited URL")
@@ -184,11 +202,26 @@ func ProbeDomainWithOptions(ctx context.Context, domain string, opts DomainProbe
 		// recognised before the status checks below call it an http_error. The
 		// domain is usable: the client clears this automatically.
 		if isChallengePage(string(body)) {
+			if opts.RequireEAPI {
+				result.Status = DomainStatusInvalidResponse
+				result.Detail = "JS challenge instead of EAPI success JSON"
+				return result
+			}
 			result.Status = DomainStatusChallenged
 			result.Detail = "JS challenge; the client solves this automatically"
 			return result
 		}
 		if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+			if opts.RequireEAPI {
+				var envelope struct {
+					Success int `json:"success"`
+				}
+				if json.Unmarshal(body, &envelope) != nil || envelope.Success != 1 {
+					result.Status = DomainStatusInvalidResponse
+					result.Detail = "endpoint did not return EAPI success JSON"
+					return result
+				}
+			}
 			result.Status = DomainStatusHealthy
 			return result
 		}
@@ -231,4 +264,34 @@ func hasDiamWallCookie(resp *http.Response) bool {
 		}
 	}
 	return false
+}
+
+// parseDiscoveredDomains accepts only the official response's domain records;
+// every advertised origin still requires allowlist validation and a real probe.
+func parseDiscoveredDomains(body []byte) []string {
+	var result struct {
+		Success int `json:"success"`
+		Domains []struct {
+			Domain           string `json:"domain"`
+			ContentAvailable bool   `json:"contentAvailable"`
+			IsRedirector     bool   `json:"isRedirector"`
+		} `json:"domains"`
+	}
+	if json.Unmarshal(body, &result) != nil || result.Success != 1 {
+		return nil
+	}
+	domains := make([]string, 0, len(result.Domains))
+	for _, record := range result.Domains {
+		if !record.ContentAvailable || record.IsRedirector {
+			continue
+		}
+		raw := record.Domain
+		if !strings.Contains(raw, "://") {
+			raw = "https://" + raw
+		}
+		if domain, err := ParseAllowedDomain(raw); err == nil {
+			domains = append(domains, domain)
+		}
+	}
+	return domains
 }

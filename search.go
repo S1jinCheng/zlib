@@ -1,12 +1,16 @@
 package zlib
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strings"
 )
 
 func (c *Client) Search(query string, page, count int, opts *SearchOptions) (SearchResult, error) {
+	if c.router != nil {
+		return runOperation(c, context.Background(), func(d *Client) (SearchResult, error) { return d.Search(query, page, count, opts) }, func(d *Client, _ error) (SearchResult, error) { return d.Search(query, page, count, opts) })
+	}
 	if !c.loggedIn {
 		return SearchResult{}, ErrNotLoggedIn
 	}
@@ -54,6 +58,12 @@ func (c *Client) Search(query string, page, count int, opts *SearchOptions) (Sea
 }
 
 func (c *Client) FullTextSearch(query string, page, count int, opts *FullTextSearchOptions) (SearchResult, error) {
+	if c.router != nil {
+		return runOperation(c, context.Background(), func(d *Client) (SearchResult, error) {
+			d.mode = ClientModeHTML
+			return d.FullTextSearch(query, page, count, opts)
+		}, nil)
+	}
 	if !c.loggedIn {
 		return SearchResult{}, ErrNotLoggedIn
 	}

@@ -43,6 +43,22 @@ func (c *Client) Download(downloadURL, destDir string, progressFn func(written, 
 }
 
 func (c *Client) DownloadWithContext(ctx context.Context, downloadURL, destDir string, progressFn func(written, total int64)) (DownloadResult, error) {
+	if ctx == context.Background() {
+		ctx = c.ctx
+	}
+	if c.router != nil {
+		d := c.operationClient()
+		if !d.loggedIn {
+			return DownloadResult{}, ErrNotLoggedIn
+		}
+		resolved, err := c.resolveDownloadURL(ctx, downloadURL)
+		if err != nil {
+			return DownloadResult{}, err
+		}
+		d = c.operationClient()
+		d.mode = ClientModeHTML
+		return d.DownloadWithContext(ctx, resolved, destDir, progressFn)
+	}
 	if !c.loggedIn {
 		return DownloadResult{}, ErrNotLoggedIn
 	}
@@ -167,8 +183,17 @@ func (c *Client) newDownloadRequest(ctx context.Context, rawURL string) (*http.R
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("Referer", c.domain+"/")
-	for k, v := range c.cookies {
-		req.AddCookie(&http.Cookie{Name: k, Value: v})
+	origin := req.URL.Scheme + "://" + req.URL.Host
+	if origin == c.domain {
+		for k, v := range c.cookieSnapshot() {
+			req.AddCookie(&http.Cookie{Name: k, Value: v})
+		}
+	} else if _, err := ParseAllowedDomain(origin); err == nil {
+		for _, name := range []string{"remix_userid", "remix_userkey"} {
+			if value := c.cookieSnapshot()[name]; value != "" {
+				req.AddCookie(&http.Cookie{Name: name, Value: value})
+			}
+		}
 	}
 	return req, nil
 }

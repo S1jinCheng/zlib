@@ -34,12 +34,12 @@ func (c *Client) fetchBookEAPI(ref string) (Book, error) {
 		return Book{}, err
 	}
 	var result struct {
-		Success int      `json:"success"`
-		Error   string   `json:"error"`
-		Book    eapiBook `json:"book"`
+		Success int       `json:"success"`
+		Error   string    `json:"error"`
+		Book    *eapiBook `json:"book"`
 	}
 	if err := decodeEAPIJSON(body, &result); err != nil {
-		return Book{}, fmt.Errorf("zlibrary: invalid EAPI book response: %w", err)
+		return Book{}, fmt.Errorf("%w: invalid EAPI book response: %v", ErrEndpointResponse, err)
 	}
 	if result.Success != 1 {
 		if result.Error == "" {
@@ -47,13 +47,16 @@ func (c *Client) fetchBookEAPI(ref string) (Book, error) {
 		}
 		return Book{}, fmt.Errorf("zlibrary: EAPI book failed: %s", result.Error)
 	}
+	if result.Book == nil {
+		return Book{}, fmt.Errorf("%w: missing EAPI book", ErrEndpointResponse)
+	}
 	if eapiString(result.Book.ID) == "" {
 		result.Book.ID = id
 	}
 	if result.Book.Hash == "" {
 		result.Book.Hash = hash
 	}
-	return c.mapEAPIBook(result.Book), nil
+	return c.mapEAPIBook(*result.Book), nil
 }
 
 func (c *Client) resolveEAPIFileURL(ctx context.Context, rawURL string) (string, error) {
@@ -87,7 +90,7 @@ func (c *Client) resolveEAPIFileURL(ctx context.Context, rawURL string) (string,
 		Link         string `json:"link"`
 	}
 	if err := decodeEAPIJSON(body, &result); err != nil {
-		return "", fmt.Errorf("zlibrary: invalid EAPI file response: %w", err)
+		return "", fmt.Errorf("%w: invalid EAPI file response: %v", ErrEndpointResponse, err)
 	}
 	if result.Success != 1 {
 		if result.Error == "" {
@@ -106,7 +109,40 @@ func (c *Client) resolveEAPIFileURL(ctx context.Context, rawURL string) (string,
 		resolved = result.Link
 	}
 	if resolved == "" {
-		return "", fmt.Errorf("%w: EAPI returned no file link", ErrDownloadFailed)
+		return "", fmt.Errorf("%w: EAPI returned no file link", ErrEndpointResponse)
 	}
 	return absolutizeURL(c.domain, resolved), nil
+}
+
+func (c *Client) resolveDownloadURL(ctx context.Context, rawURL string) (string, error) {
+	target, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasPrefix(target.Path, "/eapi/book/") || !strings.HasSuffix(target.Path, "/file") {
+		return rawURL, nil
+	}
+	origin := target.Scheme + "://" + target.Host
+	if origin != c.Domain() {
+		if _, err := ParseAllowedDomain(origin); err != nil {
+			return "", err
+		}
+	}
+	parts := strings.Split(strings.Trim(target.Path, "/"), "/")
+	if len(parts) != 5 || parts[2] == "" || parts[3] == "" {
+		return "", fmt.Errorf("invalid EAPI download reference")
+	}
+	return runOperation(c, ctx, func(d *Client) (string, error) {
+		if d.mode == ClientModeHTML {
+			book, err := d.FetchBook(parts[2] + "/" + parts[3])
+			return book.DownloadURL, err
+		}
+		return d.resolveEAPIFileURL(ctx, d.domain+target.EscapedPath())
+	}, func(d *Client, _ error) (string, error) {
+		book, err := d.FetchBook(parts[2] + "/" + parts[3])
+		if err == nil && book.DownloadURL == "" {
+			err = ErrDownloadFailed
+		}
+		return book.DownloadURL, err
+	})
 }

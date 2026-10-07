@@ -1,13 +1,11 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 	zlib "github.com/heartleo/zlib"
-	"github.com/mattn/go-runewidth"
 	"github.com/spf13/cobra"
 )
 
@@ -52,90 +50,22 @@ var searchCmd = &cobra.Command{
 		}
 
 		if jsonOut {
-			// The parser's Book.ID is the site's numeric card id; overwrite it
-			// with the alphanumeric URL id, which is what `zlib download`
-			// accepts — the id consumers of --json actually need.
-			for i, b := range result.Books {
-				if id := bookCommandID(b); id != "" {
-					result.Books[i].ID = id
-				}
-			}
-			return printJSON(result)
+			result.Books = commandBooks(result.Books)
+			return json.NewEncoder(cmd.OutOrStdout()).Encode(result)
 		}
 
 		if len(result.Books) == 0 {
-			fmt.Printf("%s No results found for %q\n", colorRed(symbolError), query)
+			fmt.Fprintf(cmd.OutOrStdout(), "%s No results found for %q\n", colorRed(symbolError), query)
 			return nil
 		}
 
-		fmt.Printf("%s Found %s · Page %d / %d\n\n",
+		fmt.Fprintf(cmd.OutOrStdout(), "%s Found %s · Page %d / %d\n\n",
 			colorGreen(symbolSuccess),
 			colorBold(fmt.Sprintf("%d results", len(result.Books))),
 			result.Page, result.TotalPages,
 		)
 
-		rows := make([][]string, 0, len(result.Books))
-		for i, b := range result.Books {
-			id := bookCommandID(b)
-			if id == "" {
-				id = "-"
-			}
-			authors := strings.Join(b.Authors, ", ")
-			title := b.Name
-			if !fullTitle {
-				title = runewidth.Truncate(title, 40, "")
-			}
-			ext := strings.ToUpper(b.Extension)
-			if ext == "" {
-				ext = "-"
-			}
-			size := b.Size
-			if size == "" {
-				size = "-"
-			}
-			year := b.Year
-			if year == "" || year == "0" {
-				year = "-"
-			}
-			rating := b.Rating
-			if rating == "" {
-				rating = "-"
-			}
-			rows = append(rows, []string{
-				fmt.Sprintf("%d", i+1), id,
-				title,
-				runewidth.Truncate(authors, 20, ""),
-				year, ext, size, rating,
-			})
-		}
-
-		t := table.New().
-			Border(lipgloss.RoundedBorder()).
-			BorderStyle(lipgloss.NewStyle().Foreground(currentTheme.Accent)).
-			Headers("#", "ID", "Title", "Authors", "Year", "Format", "Size", "Rating").
-			Rows(rows...).
-			StyleFunc(func(row, col int) lipgloss.Style {
-				pad := lipgloss.NewStyle().PaddingLeft(1).PaddingRight(1)
-				if row == table.HeaderRow {
-					return pad.Bold(true).Foreground(currentTheme.Accent)
-				}
-				switch col {
-				case 1: // ID
-					return pad.Foreground(currentTheme.Link)
-				case 2: // Title
-					return pad.Foreground(currentTheme.Title)
-				case 5: // Format
-					return pad.Foreground(extLipglossColor(rows[row][5]))
-				case 7: // Rating
-					return pad.Foreground(currentTheme.Success)
-				case 0, 3, 4, 6: // #, Authors, Year, Size
-					return pad.Foreground(currentTheme.Muted)
-				}
-				return pad
-			})
-
-		fmt.Println(t)
-		return nil
+		return renderSearchBooks(cmd.OutOrStdout(), result.Books, fullTitle)
 	},
 }
 
@@ -149,6 +79,14 @@ func bookIDFromURL(u string) string {
 		}
 	}
 	return u
+}
+
+// searchDisplayID keeps the EAPI ID separate from the download reference.
+func searchDisplayID(book zlib.Book) string {
+	if book.ID != "" {
+		return book.ID
+	}
+	return bookCommandID(book)
 }
 
 func bookCommandID(book zlib.Book) string {

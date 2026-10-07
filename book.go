@@ -1,6 +1,10 @@
 package zlib
 
-import "sync"
+import (
+	"context"
+	"strings"
+	"sync"
+)
 
 // detailFetchConcurrency bounds the book-detail fan-out. An unbounded burst
 // makes every goroutine clear its own challenge instead of sharing a token.
@@ -66,6 +70,20 @@ func (c *Client) FetchBookDetails(ids []string) map[string]Book {
 }
 
 func (c *Client) FetchBook(id string) (Book, error) {
+	if c.router != nil {
+		return runOperation(c, context.Background(), func(d *Client) (Book, error) {
+			if !strings.Contains(id, ":") && !c.router.policy.DisableHTMLFallback {
+				d.mode = ClientModeHTML
+			}
+			if d.mode == ClientModeHTML {
+				return d.FetchBook(strings.Replace(id, ":", "/", 1))
+			}
+			return d.FetchBook(id)
+		}, func(d *Client, _ error) (Book, error) {
+			ref := strings.Replace(id, ":", "/", 1)
+			return d.FetchBook(ref)
+		})
+	}
 	if !c.loggedIn {
 		return Book{}, ErrNotLoggedIn
 	}

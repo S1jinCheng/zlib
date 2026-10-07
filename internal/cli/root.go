@@ -33,17 +33,6 @@ var versionCmd = &cobra.Command{
 	},
 }
 
-// resolveClientDomain picks the domain an authenticated client should use.
-// ZLIB_DOMAIN is current, explicit user intent, so it outranks the domain
-// session.json cached back when the user logged in. An empty result means the
-// client should keep the default it already resolved.
-func resolveClientDomain(envDomain, sessionDomain string) string {
-	if domain := strings.TrimSpace(envDomain); domain != "" {
-		return domain
-	}
-	return strings.TrimSpace(sessionDomain)
-}
-
 // newClient loads session and returns an authenticated client.
 func newClient() *zlib.Client {
 	session, err := config.LoadSession()
@@ -51,23 +40,16 @@ func newClient() *zlib.Client {
 		fmt.Fprintln(os.Stderr, "Not logged in. Run: zlib login")
 		os.Exit(1)
 	}
-	c := zlib.NewClient()
-	if session.Mode == string(zlib.ClientModeEAPI) {
-		c.SetMode(zlib.ClientModeEAPI)
+	// Empty mode is the legacy HTML session format. New logins always save
+	// an explicit EAPI or HTML mode.
+	if session.Mode == "" {
+		session.Mode = "legacy"
 	}
-	// SetDomain before SetCookies: SetCookies seats the jar against c.domain.
-	domain := resolveClientDomain(os.Getenv(zlib.EnvDomain), session.Domain)
-	if domain == "" {
-		fmt.Fprintf(os.Stderr, "Domain is not configured. Set %s or run zlib login --domain URL again.\n", zlib.EnvDomain)
-		os.Exit(1)
-	}
-	allowedDomain, err := zlib.ParseAllowedDomain(domain)
+	c, err := configureClient(rootCmd, session)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid Z-Library domain: %v\n", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	c.SetDomain(allowedDomain)
-	c.SetCookies(session.Cookies)
 	return c
 }
 
@@ -141,13 +123,18 @@ func classifyNetworkError(err error) (string, bool) {
 
 func init() {
 	runewidth.DefaultCondition.EastAsianWidth = false
+	rootCmd.PersistentFlags().String("domain", "", "Pin a Z-Library HTTPS endpoint (disables automatic endpoint switching)")
+	rootCmd.PersistentFlags().String("backend", "auto", "Backend: auto (EAPI first), eapi, or html")
 	rootCmd.SetVersionTemplate("{{printf \"%s version %s\\n\" .Name .Version}}")
 	rootCmd.AddCommand(loginCmd)
 	rootCmd.AddCommand(logoutCmd)
 	rootCmd.AddCommand(searchCmd)
+	rootCmd.AddCommand(popularCmd)
+	rootCmd.AddCommand(recommendedCmd)
 	rootCmd.AddCommand(downloadCmd)
 	rootCmd.AddCommand(profileCmd)
 	rootCmd.AddCommand(doctorCmd)
+	rootCmd.AddCommand(endpointCmd)
 	rootCmd.AddCommand(kindleCmd)
 	rootCmd.AddCommand(themeCmd)
 	rootCmd.AddCommand(versionCmd)

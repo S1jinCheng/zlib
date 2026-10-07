@@ -14,6 +14,7 @@ import (
 
 const (
 	DefaultEAPIDomain = "https://z-lib.gd"
+	EAPIProbePath     = "/eapi/info/domains"
 
 	eapiLoginPath  = "/eapi/user/login"
 	eapiSearchPath = "/eapi/book/search"
@@ -34,6 +35,7 @@ type eapiBook struct {
 	Filesize       any    `json:"filesize"`
 	FilesizeString string `json:"filesizeString"`
 	Href           string `json:"href"`
+	URL            string `json:"url"`
 	DownloadPath   string `json:"dl"`
 	Description    string `json:"description"`
 	Date           string `json:"date"`
@@ -49,6 +51,9 @@ type eapiPagination struct {
 
 func (c *Client) LoginEAPI(email, password string) error {
 	c.SetMode(ClientModeEAPI)
+	if c.router != nil {
+		return c.Login(email, password)
+	}
 	body, err := c.eapiPost(eapiLoginPath, url.Values{
 		"email":    {email},
 		"password": {password},
@@ -67,10 +72,10 @@ func (c *Client) LoginEAPI(email, password string) error {
 		} `json:"user"`
 	}
 	if err := decodeEAPIJSON(body, &result); err != nil {
-		return fmt.Errorf("%w: invalid EAPI response: %v", ErrLoginFailed, err)
+		return fmt.Errorf("%w: %w: invalid EAPI response: %v", ErrLoginFailed, ErrEndpointResponse, err)
 	}
 	if result.Success != 1 {
-		return c.loginEAPIViaHTML(email, password, result.Error)
+		return fmt.Errorf("%w: %w", ErrLoginFailed, &EAPIBusinessError{Message: result.Error})
 	}
 
 	key := result.User.RemixUserKey
@@ -78,7 +83,7 @@ func (c *Client) LoginEAPI(email, password string) error {
 		key = result.User.LegacyRemixKey
 	}
 	if result.User.ID == "" || key == "" {
-		return fmt.Errorf("%w: EAPI response did not contain remix credentials", ErrLoginFailed)
+		return fmt.Errorf("%w: %w: EAPI response did not contain remix credentials", ErrLoginFailed, ErrEndpointResponse)
 	}
 	c.SetCookies(map[string]string{
 		"remix_userid":  result.User.ID.String(),
@@ -153,7 +158,7 @@ func (c *Client) searchEAPI(query string, page, count int, opts *SearchOptions) 
 		Pagination eapiPagination `json:"pagination"`
 	}
 	if err := decodeEAPIJSON(body, &result); err != nil {
-		return SearchResult{}, fmt.Errorf("zlibrary: invalid EAPI search response: %w", err)
+		return SearchResult{}, fmt.Errorf("%w: invalid EAPI search response: %v", ErrEndpointResponse, err)
 	}
 	if result.Success != 1 {
 		if result.Error == "" {
@@ -162,6 +167,9 @@ func (c *Client) searchEAPI(query string, page, count int, opts *SearchOptions) 
 		return SearchResult{}, fmt.Errorf("zlibrary: EAPI search failed: %s", result.Error)
 	}
 
+	if result.Books == nil {
+		return SearchResult{}, fmt.Errorf("%w: missing books in EAPI search", ErrEndpointResponse)
+	}
 	books := make([]Book, 0, len(result.Books))
 	for _, item := range result.Books {
 		books = append(books, c.mapEAPIBook(item))
@@ -183,11 +191,11 @@ func (c *Client) searchEAPI(query string, page, count int, opts *SearchOptions) 
 }
 
 func (c *Client) eapiPost(path string, values url.Values) ([]byte, error) {
-	return c.eapiRequest(context.Background(), http.MethodPost, path, values)
+	return c.eapiRequest(c.ctx, http.MethodPost, path, values)
 }
 
 func (c *Client) eapiGet(path string, values url.Values) ([]byte, error) {
-	return c.eapiRequest(context.Background(), http.MethodGet, path, values)
+	return c.eapiRequest(c.ctx, http.MethodGet, path, values)
 }
 
 func (c *Client) eapiRequest(ctx context.Context, method, path string, values url.Values) ([]byte, error) {
@@ -230,6 +238,16 @@ func (c *Client) eapiRequest(ctx context.Context, method, path string, values ur
 		return nil, err
 	}
 
+	// Business envelopes take precedence over retryable status codes. Only the
+	// measured login gate has a narrowly scoped HTML credential fallback.
+	var envelope struct {
+		Success *int   `json:"success"`
+		Error   string `json:"error"`
+	}
+	decodeErr := decodeEAPIJSON(responseBody, &envelope)
+	if decodeErr == nil && envelope.Success != nil && *envelope.Success != 1 {
+		return nil, &EAPIBusinessError{StatusCode: resp.StatusCode, Message: envelope.Error, LoginGate: path == eapiLoginPath && (resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusBadRequest) && strings.EqualFold(strings.TrimSpace(envelope.Error), "Authorization failed")}
+	}
 	// EAPI answers with application/json, so isBotProtectionResponse skips the
 	// body scan entirely and only a DiamWall status can trip here. That is what
 	// keeps a search for a book whose title or query text mentions the vendor
@@ -238,29 +256,22 @@ func (c *Client) eapiRequest(ctx context.Context, method, path string, values ur
 		return nil, &BotProtectionError{StatusCode: resp.StatusCode, URL: resp.Request.URL.String()}
 	}
 
-	// A non-2xx EAPI response still carries {"success":0,"error":"..."}. Hand
-	// that body to the caller so the server's message ("daily limit reached",
-	// "not authorized") survives instead of being flattened into an opaque
-	// status error.
-	if err := validateStatus(resp); err != nil && !isEAPIEnvelope(responseBody) {
+	if err := validateStatus(resp); err != nil {
+		if resp.StatusCode == http.StatusNotFound && (!strings.HasPrefix(path, "/eapi/book/") || path == eapiSearchPath || path == eapiPopularPath) {
+			return nil, fmt.Errorf("%w: EAPI endpoint unavailable: %w", ErrEndpointResponse, err)
+		}
 		return nil, err
+	}
+	if decodeErr != nil || envelope.Success == nil {
+		return nil, fmt.Errorf("%w: invalid EAPI envelope", ErrEndpointResponse)
 	}
 	return responseBody, nil
 }
 
-// isEAPIEnvelope reports whether body is a JSON object carrying EAPI's
-// "success" field, meaning the caller can extract a real error message from it.
-func isEAPIEnvelope(body []byte) bool {
-	var envelope struct {
-		Success *int `json:"success"`
-	}
-	if err := decodeEAPIJSON(body, &envelope); err != nil {
-		return false
-	}
-	return envelope.Success != nil
-}
-
 func (c *Client) mapEAPIBook(item eapiBook) Book {
+	if item.Href == "" {
+		item.Href = item.URL
+	}
 	id := eapiString(item.ID)
 	isbn := eapiString(item.Identifier)
 	if isbn == "" {
@@ -300,7 +311,17 @@ func (c *Client) mapEAPIBook(item eapiBook) Book {
 func decodeEAPIJSON(body []byte, target any) error {
 	decoder := json.NewDecoder(bytes.NewReader(body))
 	decoder.UseNumber()
-	return decoder.Decode(target)
+	if err := decoder.Decode(target); err != nil {
+		return err
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("multiple JSON values")
+	}
+	return nil
 }
 
 func eapiString(value any) string {

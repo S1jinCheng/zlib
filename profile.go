@@ -1,6 +1,11 @@
 package zlib
 
+import "context"
+
 func (c *Client) GetLimits() (DownloadLimit, error) {
+	if c.router != nil {
+		return runOperation(c, context.Background(), func(d *Client) (DownloadLimit, error) { return d.GetLimits() }, func(d *Client, _ error) (DownloadLimit, error) { return d.GetLimits() })
+	}
 	if !c.loggedIn {
 		return DownloadLimit{}, ErrNotLoggedIn
 	}
@@ -16,6 +21,9 @@ func (c *Client) GetLimits() (DownloadLimit, error) {
 }
 
 func (c *Client) DownloadHistory(page int) (DownloadHistoryResult, error) {
+	if c.router != nil {
+		return runOperation(c, context.Background(), func(d *Client) (DownloadHistoryResult, error) { return d.DownloadHistory(page) }, func(d *Client, _ error) (DownloadHistoryResult, error) { return d.DownloadHistory(page) })
+	}
 	if !c.loggedIn {
 		return DownloadHistoryResult{}, ErrNotLoggedIn
 	}

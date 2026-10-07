@@ -6,16 +6,17 @@ import (
 )
 
 var (
-	ErrLoginFailed    = errors.New("zlibrary: login failed")
-	ErrNotLoggedIn    = errors.New("zlibrary: not logged in, call Login first")
-	ErrNoDomain       = errors.New("zlibrary: no working domain found")
-	ErrEmptyQuery     = errors.New("zlibrary: search query is empty")
-	ErrNoID           = errors.New("zlibrary: no book ID provided")
-	ErrInvalidProxy   = errors.New("zlibrary: proxy_list must be a non-empty slice")
-	ErrParseFailed    = errors.New("zlibrary: failed to parse page")
-	ErrSessionExpired = errors.New("zlibrary: session expired, run `zlib login` to re-authenticate")
-	ErrPhraseMinWords = errors.New("zlibrary: phrase search requires at least 2 words")
-	ErrDownloadFailed = errors.New("zlibrary: download failed")
+	ErrEndpointResponse = errors.New("zlibrary: incompatible endpoint response")
+	ErrLoginFailed      = errors.New("zlibrary: login failed")
+	ErrNotLoggedIn      = errors.New("zlibrary: not logged in, call Login first")
+	ErrNoDomain         = errors.New("zlibrary: no working domain found")
+	ErrEmptyQuery       = errors.New("zlibrary: search query is empty")
+	ErrNoID             = errors.New("zlibrary: no book ID provided")
+	ErrInvalidProxy     = errors.New("zlibrary: proxy_list must be a non-empty slice")
+	ErrParseFailed      = errors.New("zlibrary: failed to parse page")
+	ErrSessionExpired   = errors.New("zlibrary: session expired, run `zlib login` to re-authenticate")
+	ErrPhraseMinWords   = errors.New("zlibrary: phrase search requires at least 2 words")
+	ErrDownloadFailed   = errors.New("zlibrary: download failed")
 	// ErrBotProtection is returned when an upstream anti-bot page is served
 	// instead of the requested Z-Library response.
 	ErrBotProtection = errors.New("zlibrary: blocked by anti-bot protection")
@@ -50,4 +51,19 @@ type HTTPStatusError struct {
 
 func (e *HTTPStatusError) Error() string {
 	return fmt.Sprintf("zlibrary: unexpected HTTP status %d at %s", e.StatusCode, e.URL)
+}
+
+// EAPIBusinessError is never an endpoint outage. LoginGate is the one documented
+// /eapi/user/login exception which may obtain credentials via /rpc.php.
+type EAPIBusinessError struct {
+	StatusCode int
+	Message    string
+	LoginGate  bool
+}
+
+func (e *EAPIBusinessError) Error() string {
+	if e.Message == "" {
+		return "zlibrary: EAPI request rejected"
+	}
+	return "zlibrary: EAPI request rejected: " + e.Message
 }

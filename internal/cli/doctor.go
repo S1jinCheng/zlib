@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
@@ -12,10 +15,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const eapiProbePath = zlib.EAPIProbePath
+
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Check Z-Library domain connectivity",
-	Long:  "Check configured Z-Library candidate domains without logging in or changing your active domain.",
+	Long:  "Automatically check both the website and EAPI endpoints of known Z-Library domains without logging in or changing your active domain.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		proxyValue, _ := cmd.Flags().GetString("proxy")
 		eapi, _ := cmd.Flags().GetBool("eapi")
@@ -23,17 +28,9 @@ var doctorCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		probeOptions := zlib.DomainProbeOptions{ProxyURL: proxyURL}
-		if eapi {
-			probeOptions.Path = "/eapi/info/domains"
-		}
-		results := zlib.ProbeDomainsWithOptions(
-			cmd.Context(),
-			zlib.KnownDomains(),
-			probeOptions,
-		)
+		results := probeDoctorDomains(cmd.Context(), zlib.KnownDomains(), proxyURL, eapi)
 		if jsonOut, _ := cmd.Flags().GetBool("json"); jsonOut {
-			return printJSON(results)
+			return json.NewEncoder(cmd.OutOrStdout()).Encode(results)
 		}
 
 		rows := make([][]string, 0, len(results))
@@ -46,13 +43,13 @@ var doctorCmd = &cobra.Command{
 			if detail == "" && result.FinalURL != "" && result.FinalURL != result.Domain {
 				detail = "final: " + result.FinalURL
 			}
-			rows = append(rows, []string{result.Domain, string(result.Status), httpStatus, detail})
+			rows = append(rows, []string{result.Domain, string(result.Mode), string(result.Status), httpStatus, detail})
 		}
 
 		t := table.New().
 			Border(lipgloss.RoundedBorder()).
 			BorderStyle(lipgloss.NewStyle().Foreground(currentTheme.Accent)).
-			Headers("Domain", "Status", "HTTP", "Detail").
+			Headers("Domain", "Mode", "Status", "HTTP", "Detail").
 			Rows(rows...).
 			StyleFunc(func(row, col int) lipgloss.Style {
 				pad := lipgloss.NewStyle().PaddingLeft(1).PaddingRight(1)
@@ -60,18 +57,54 @@ var doctorCmd = &cobra.Command{
 					return pad.Bold(true).Foreground(currentTheme.Accent)
 				}
 				switch col {
-				case 0, 2:
+				case 0, 1, 3:
 					return pad.Foreground(currentTheme.Muted)
-				case 1:
-					return pad.Foreground(doctorStatusColor(zlib.DomainStatus(rows[row][1])))
+				case 2:
+					return pad.Foreground(doctorStatusColor(zlib.DomainStatus(rows[row][2])))
 				default:
 					return pad
 				}
 			})
 
-		fmt.Println(t)
+		fmt.Fprintln(cmd.OutOrStdout(), t)
 		return nil
 	},
+}
+
+// doctorCheck preserves the probe fields and identifies the endpoint checked.
+type doctorCheck struct {
+	zlib.DomainCheck
+	Mode zlib.ClientMode `json:"mode"`
+}
+
+// probeDoctorDomains checks both endpoints concurrently, retaining domain order
+// and placing HTML before EAPI so output is stable regardless of response time.
+func probeDoctorDomains(ctx context.Context, domains []string, proxyURL string, eapiOnly bool) []doctorCheck {
+	modes := []zlib.ClientMode{zlib.ClientModeHTML, zlib.ClientModeEAPI}
+	if eapiOnly {
+		modes = modes[1:]
+	}
+	results := make([]doctorCheck, len(domains)*len(modes))
+	var wg sync.WaitGroup
+	for i, domain := range domains {
+		for j, mode := range modes {
+			wg.Add(1)
+			go func(index int, domain string, mode zlib.ClientMode) {
+				defer wg.Done()
+				opts := zlib.DomainProbeOptions{ProxyURL: proxyURL}
+				if mode == zlib.ClientModeEAPI {
+					opts.Path = eapiProbePath
+					opts.RequireEAPI = true
+				}
+				results[index] = doctorCheck{
+					DomainCheck: zlib.ProbeDomainWithOptions(ctx, domain, opts),
+					Mode:        mode,
+				}
+			}(i*len(modes)+j, domain, mode)
+		}
+	}
+	wg.Wait()
+	return results
 }
 
 func validateDoctorProxy(rawURL string) (string, error) {
@@ -109,5 +142,6 @@ func doctorStatusColor(status zlib.DomainStatus) lipgloss.Color {
 func init() {
 	doctorCmd.Flags().Bool("json", false, "Output domain checks as JSON")
 	doctorCmd.Flags().String("proxy", "", "Proxy URL for checks (http, https, socks5, or socks5h)")
-	doctorCmd.Flags().Bool("eapi", false, "Check the EAPI health endpoint instead of the home page")
+	doctorCmd.Flags().Bool("eapi", false, "Check only the EAPI health endpoint (both endpoints are checked by default)")
+	_ = doctorCmd.Flags().MarkDeprecated("eapi", "doctor now checks both HTML and EAPI automatically")
 }
