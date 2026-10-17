@@ -81,8 +81,6 @@ func (c *Client) DownloadWithContext(ctx context.Context, downloadURL, destDir s
 	filename := sanitizeFilename(filenameFromResponse(resp, downloadURL))
 	destPath := filepath.Join(destDir, filename)
 
-	// Each attempt owns a separate file. Opening destPath directly would
-	// truncate an existing download before the new transfer has succeeded.
 	f, err := os.CreateTemp(destDir, ".zlib-download-*")
 	if err != nil {
 		return DownloadResult{}, err
@@ -123,9 +121,6 @@ func (c *Client) DownloadWithContext(ctx context.Context, downloadURL, destDir s
 	if err := f.Close(); err != nil {
 		return DownloadResult{}, err
 	}
-	// Preserve the existing overwrite-on-success behavior. The temporary file
-	// lives in the destination directory so promotion stays on one filesystem.
-	// A failed rename must not be worked around by deleting the old destination.
 	if err := os.Rename(tempPath, destPath); err != nil {
 		return DownloadResult{}, err
 	}

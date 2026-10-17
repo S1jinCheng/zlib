@@ -153,9 +153,6 @@ func TestConcurrentDownloadsCommitCompleteFiles(t *testing.T) {
 	succeeded := 0
 	for range 4 {
 		if err := <-results; err != nil {
-			// Windows can reject simultaneous replacements with a sharing
-			// violation. A failed commit is allowed, but must leave a complete
-			// destination and remove only its own temporary file.
 			var renameErr *os.LinkError
 			if !errors.As(err, &renameErr) || renameErr.Op != "rename" {
 				t.Errorf("unexpected concurrent download error: %v", err)
