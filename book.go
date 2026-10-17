@@ -1,6 +1,9 @@
 package zlib
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 // detailFetchConcurrency bounds the book-detail fan-out. An unbounded burst
 // makes every goroutine clear its own challenge instead of sharing a token.
@@ -66,6 +69,12 @@ func (c *Client) FetchBookDetails(ids []string) map[string]Book {
 }
 
 func (c *Client) FetchBook(id string) (Book, error) {
+	return c.FetchBookWithContext(context.Background(), id)
+}
+
+// FetchBookWithContext fetches book details with a caller-supplied deadline or
+// cancellation signal, including EAPI requests and HTML challenge retries.
+func (c *Client) FetchBookWithContext(ctx context.Context, id string) (Book, error) {
 	if !c.loggedIn {
 		return Book{}, ErrNotLoggedIn
 	}
@@ -73,11 +82,11 @@ func (c *Client) FetchBook(id string) (Book, error) {
 		return Book{}, ErrNoID
 	}
 	if c.mode == ClientModeEAPI {
-		return c.fetchBookEAPI(id)
+		return c.fetchBookEAPI(ctx, id)
 	}
 
 	bookURL := BuildBookURL(c.domain, id)
-	html, err := c.get(bookURL)
+	html, err := c.getWithContext(ctx, bookURL)
 	if err != nil {
 		return Book{}, err
 	}

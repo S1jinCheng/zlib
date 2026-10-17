@@ -1,6 +1,7 @@
 package zlib
 
 import (
+	"context"
 	"crypto/sha1"
 	"fmt"
 	"regexp"
@@ -23,6 +24,10 @@ var challengeRe = regexp.MustCompile(`'([0-9A-Fa-f]{40})','c_token=`)
 //	  sha1(c + strconv.Itoa(i))[n1+1] == 0x0b
 //	c_token = c + strconv.Itoa(i)
 func solveChallenge(html string) (string, error) {
+	return solveChallengeWithContext(context.Background(), html)
+}
+
+func solveChallengeWithContext(ctx context.Context, html string) (string, error) {
 	m := challengeRe.FindStringSubmatch(html)
 	if m == nil {
 		return "", fmt.Errorf("challenge string not found in page")
@@ -36,6 +41,11 @@ func solveChallenge(html string) (string, error) {
 	idx := int(n1)
 
 	for i := 0; i < 10_000_000; i++ {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return "", err
+			}
+		}
 		input := c + strconv.Itoa(i)
 		h := sha1.Sum([]byte(input))
 		if h[idx] == 0xb0 && h[idx+1] == 0x0b {

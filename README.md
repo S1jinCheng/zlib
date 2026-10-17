@@ -219,8 +219,21 @@ zlib download Gz31nyAV5E --dir .      # this one lands here instead
 
 Neither the flag nor the variable creates the directory — make it first if it does not exist.
 
+Once a book is selected, its lookup and download share a **30-minute** time limit.
+Use `--download-timeout 2h` or set `ZLIB_DOWNLOAD_TIMEOUT=2h` for larger transfers;
+an explicit flag takes precedence, and `0` disables the time limit. This applies
+to downloads started from `download`, `search`, and `history`. The limit includes
+book details, file-link resolution, browser challenges, retry waits, and file
+transfer; browsing/selecting a book and SMTP delivery are separate operations.
+
+```bash
+zlib download Gz31nyAV5E --download-timeout 2h
+zlib download Gz31nyAV5E --download-timeout 0  # explicitly allow unlimited time
+```
+
 Press `Ctrl+C` to cancel.
-Incomplete files are removed automatically.
+Non-interactive downloads also handle `SIGTERM`. Cancellation stops lookup,
+retry waits, and the transfer; incomplete files are removed automatically.
 
 ### history
 
@@ -421,6 +434,7 @@ A successful login writes `ZLIB_DOMAIN` into `~/.config/zlib/.env`, replacing th
 | `ZLIB_THEME`            | Override theme without changing config                          |
 | `ZLIB_DOWNLOAD_DIR`     | Default destination for downloads when `--dir` is omitted       |
 | `ZLIB_DOWNLOAD_RETRIES` | Retries for dropped connections and `502`/`503`/`504` responses |
+| `ZLIB_DOWNLOAD_TIMEOUT` | Selected-book lookup and download limit (default `30m`; `0` disables) |
 
 `ZLIB_DOWNLOAD_RETRIES` defaults to `3`.
 

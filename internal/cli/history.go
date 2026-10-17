@@ -42,7 +42,7 @@ var historyCmd = &cobra.Command{
 			if bookName == "" {
 				bookName = downloadID
 			}
-			return runDownload(newDirectDownloadModel(bookName, item.DownloadURL, dir, c), sendToKindle)
+			return runDownload(cmd, newDirectDownloadModel(bookName, item.DownloadURL, dir, c), sendToKindle)
 		}
 
 		// No flags: interactive mode (--json always forces the static path)
@@ -64,7 +64,7 @@ var historyCmd = &cobra.Command{
 			if bookName == "" {
 				bookName = bookIDFromURL(item.URL)
 			}
-			return runDownload(newDirectDownloadModel(bookName, item.DownloadURL, dir, c), sendToKindle)
+			return runDownload(cmd, newDirectDownloadModel(bookName, item.DownloadURL, dir, c), sendToKindle)
 		}
 
 		result, err := c.DownloadHistory(page)
@@ -178,6 +178,7 @@ func init() {
 	historyCmd.Flags().IntP("page", "p", 1, "Page number")
 	historyCmd.Flags().StringP("download", "D", "", "Download a history book by book ID")
 	addDestDirFlag(historyCmd)
+	addDownloadTimeoutFlag(historyCmd)
 	historyCmd.Flags().Bool("send-to-kindle", false, "Send the downloaded file to Kindle.")
 	historyCmd.Flags().StringP("format", "f", "", "Filter by file format (e.g. epub, pdf)")
 	historyCmd.Flags().Bool("json", false, "Output history as JSON (implies non-interactive)")

@@ -23,13 +23,13 @@ func parseEAPIBookRef(ref string) (string, string, error) {
 	return id, hash, nil
 }
 
-func (c *Client) fetchBookEAPI(ref string) (Book, error) {
+func (c *Client) fetchBookEAPI(ctx context.Context, ref string) (Book, error) {
 	id, hash, err := parseEAPIBookRef(ref)
 	if err != nil {
 		return Book{}, err
 	}
 	path := "/eapi/book/" + url.PathEscape(id) + "/" + url.PathEscape(hash)
-	body, err := c.eapiGet(path, nil)
+	body, err := c.eapiRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return Book{}, err
 	}

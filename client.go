@@ -2,6 +2,7 @@ package zlib
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -400,9 +401,13 @@ func isLoginPage(html string) bool {
 // The budget must stay bounded: each retry restarts the HTTP timeout, so an
 // unbounded loop turns a stubborn endpoint into a command that never returns.
 func (c *Client) get(rawURL string) (string, error) {
+	return c.getWithContext(context.Background(), rawURL)
+}
+
+func (c *Client) getWithContext(ctx context.Context, rawURL string) (string, error) {
 	wait := challengeRetryBase
 	for attempt := 1; ; attempt++ {
-		html, challenged, err := c.fetchOnce(rawURL)
+		html, challenged, err := c.fetchOnce(ctx, rawURL)
 		if err != nil {
 			return "", err
 		}
@@ -412,13 +417,15 @@ func (c *Client) get(rawURL string) (string, error) {
 		if attempt >= maxChallengeAttempts {
 			return "", fmt.Errorf("%w: still challenged after %d attempts at %s", ErrChallengeFailed, attempt, rawURL)
 		}
-		token, err := solveChallenge(html)
+		token, err := solveChallengeWithContext(ctx, html)
 		if err != nil {
 			return "", fmt.Errorf("%w: %w", ErrChallengeFailed, err)
 		}
 		c.setCookie("c_token", token)
 
-		time.Sleep(wait)
+		if err := sleepContext(ctx, wait); err != nil {
+			return "", err
+		}
 		if wait *= 2; wait > challengeRetryMaxWait {
 			wait = challengeRetryMaxWait
 		}
@@ -428,8 +435,8 @@ func (c *Client) get(rawURL string) (string, error) {
 // fetchOnce performs a single GET. It reports challenged=true, along with the
 // interstitial HTML, when the server answered with the JS challenge instead of
 // the requested page.
-func (c *Client) fetchOnce(rawURL string) (html string, challenged bool, err error) {
-	req, err := http.NewRequest("GET", rawURL, nil)
+func (c *Client) fetchOnce(ctx context.Context, rawURL string) (html string, challenged bool, err error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", rawURL, nil)
 	if err != nil {
 		return "", false, err
 	}

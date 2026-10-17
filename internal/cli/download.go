@@ -3,6 +3,9 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -23,7 +26,7 @@ var downloadCmd = &cobra.Command{
 		}
 		sendToKindle, _ := cmd.Flags().GetBool("send-to-kindle")
 		c := newClient()
-		return runDownload(newDownloadModel(args[0], dir, c), sendToKindle)
+		return runDownload(cmd, newDownloadModel(args[0], dir, c), sendToKindle)
 	},
 }
 
@@ -31,7 +34,13 @@ var downloadCmd = &cobra.Command{
 // progress UI on an interactive terminal, or a plain text path otherwise (see
 // isInteractive) — then prints the saved path and optionally delivers to
 // Kindle. Shared by the download, search, and history commands.
-func runDownload(m downloadModel, sendToKindle bool) error {
+func runDownload(cmd *cobra.Command, m downloadModel, sendToKindle bool) error {
+	ctx, cancel, err := downloadContext(cmd)
+	if err != nil {
+		return err
+	}
+	defer cancel()
+	m.ctx = ctx
 	dm, err := runDownloadModel(m)
 	if err != nil {
 		return err
@@ -60,10 +69,20 @@ func runDownload(m downloadModel, sendToKindle bool) error {
 // runDownloadModel runs the download, choosing the bubbletea UI or the plain
 // path based on whether the process is attached to a terminal.
 func runDownloadModel(m downloadModel) (downloadModel, error) {
+	ctx, cancel := context.WithCancel(m.ctx)
+	defer cancel()
+	m.ctx, m.cancel = ctx, cancel
 	if !isInteractive() {
 		return m.runPlain()
 	}
 	result, err := tea.NewProgram(m).Run()
+	cancel()
+	// Wait for the worker's cleanup before the CLI exits. Once cancelled, its
+	// progress sends are interruptible and cannot depend on a running UI.
+	if dm, ok := result.(downloadModel); ok && dm.downloadCh != nil {
+		for range dm.downloadCh {
+		}
+	}
 	if err != nil {
 		return downloadModel{}, err
 	}
@@ -74,9 +93,11 @@ func runDownloadModel(m downloadModel) (downloadModel, error) {
 // output. It mirrors the fetch-then-download flow of the UI model and records
 // the result on the returned model.
 func (m downloadModel) runPlain() (downloadModel, error) {
+	ctx, stop := signal.NotifyContext(m.ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	downloadURL, name := m.directURL, m.bookName
 	if downloadURL == "" {
-		book, err := m.client.FetchBook(m.id)
+		book, err := m.client.FetchBookWithContext(ctx, m.id)
 		if err != nil {
 			return m, fmt.Errorf("failed to fetch book: %w", err)
 		}
@@ -87,7 +108,7 @@ func (m downloadModel) runPlain() (downloadModel, error) {
 	}
 
 	fmt.Printf("  Downloading: %s\n", name)
-	result, err := m.client.Download(downloadURL, m.dir, nil)
+	result, err := m.client.DownloadWithContext(ctx, downloadURL, m.dir, nil)
 	if err != nil {
 		return m, err
 	}
@@ -99,6 +120,7 @@ func (m downloadModel) runPlain() (downloadModel, error) {
 
 func init() {
 	addDestDirFlag(downloadCmd)
+	addDownloadTimeoutFlag(downloadCmd)
 	downloadCmd.Flags().Bool("send-to-kindle", false, "Send the downloaded file to Kindle.")
 }
 
@@ -114,6 +136,7 @@ const (
 )
 
 type downloadModel struct {
+	ctx        context.Context
 	id         string
 	dir        string
 	client     *zlib.Client
@@ -150,6 +173,7 @@ func newDownloadModel(id, dir string, c *zlib.Client) downloadModel {
 	)
 
 	return downloadModel{
+		ctx:      context.Background(),
 		id:       id,
 		dir:      dir,
 		client:   c,
@@ -177,7 +201,7 @@ func (m downloadModel) Init() tea.Cmd {
 
 func (m downloadModel) fetchCmd() tea.Cmd {
 	return func() tea.Msg {
-		book, err := m.client.FetchBook(m.id)
+		book, err := m.client.FetchBookWithContext(m.ctx, m.id)
 		if err != nil {
 			return errMsg{fmt.Errorf("failed to fetch book: %w", err)}
 		}
@@ -189,9 +213,17 @@ func (m downloadModel) fetchCmd() tea.Cmd {
 }
 
 // waitForMsg returns a Cmd that reads the next message from the download channel.
-func waitForMsg(ch <-chan tea.Msg) tea.Cmd {
+func waitForMsg(ctx context.Context, ch <-chan tea.Msg) tea.Cmd {
 	return func() tea.Msg {
-		return <-ch
+		select {
+		case msg, ok := <-ch:
+			if !ok && ctx.Err() != nil {
+				return errMsg{ctx.Err()}
+			}
+			return msg
+		case <-ctx.Done():
+			return errMsg{ctx.Err()}
+		}
 	}
 }
 
@@ -207,20 +239,27 @@ func (m downloadModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.bookName = msg.book.Name
 		ch := make(chan tea.Msg, 64)
 		m.downloadCh = ch
-		ctx, cancel := context.WithCancel(context.Background())
-		m.cancel = cancel
+		ctx := m.ctx
 		go func() {
+			defer close(ch)
 			result, err := m.client.DownloadWithContext(ctx, msg.book.DownloadURL, m.dir, func(w, t int64) {
-				ch <- progressMsg{w, t}
+				select {
+				case ch <- progressMsg{w, t}:
+				case <-ctx.Done():
+				}
 			})
+			var done tea.Msg
 			if err != nil {
-				ch <- errMsg{err}
+				done = errMsg{err}
 			} else {
-				ch <- downloadDoneMsg{result.FilePath, result.Size}
+				done = downloadDoneMsg{result.FilePath, result.Size}
 			}
-			close(ch)
+			select {
+			case ch <- done:
+			case <-ctx.Done():
+			}
 		}()
-		return m, waitForMsg(ch)
+		return m, waitForMsg(ctx, ch)
 
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
@@ -239,7 +278,7 @@ func (m downloadModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			pct = float64(m.written) / float64(m.total)
 		}
 		progressCmd := m.progress.SetPercent(pct)
-		return m, tea.Batch(progressCmd, waitForMsg(m.downloadCh))
+		return m, tea.Batch(progressCmd, waitForMsg(m.ctx, m.downloadCh))
 
 	case downloadDoneMsg:
 		m.savedPath = msg.path

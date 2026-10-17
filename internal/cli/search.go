@@ -37,7 +37,7 @@ var searchCmd = &cobra.Command{
 			}
 			sendToKindle, _ := cmd.Flags().GetBool("send-to-kindle")
 
-			return runDownload(newDownloadModel(selectedID, dir, c), sendToKindle)
+			return runDownload(cmd, newDownloadModel(selectedID, dir, c), sendToKindle)
 		}
 
 		query := strings.Join(args, " ")
@@ -197,6 +197,7 @@ func init() {
 	searchCmd.Flags().IntP("page", "p", 1, "Page number")
 	searchCmd.Flags().IntP("count", "n", 50, "Results per page")
 	addDestDirFlag(searchCmd)
+	addDownloadTimeoutFlag(searchCmd)
 	searchCmd.Flags().Bool("send-to-kindle", false, "Send the downloaded file to Kindle.")
 	searchCmd.Flags().StringArray("ext", nil, "Filter by file extension (repeatable): epub, pdf, mobi, …")
 	searchCmd.Flags().StringArray("format", nil, "Alias for --ext: filter by file format (repeatable)")

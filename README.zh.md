@@ -206,7 +206,19 @@ zlib download Gz31nyAV5E --dir .      # 这一次改存到当前目录
 
 参数和变量都不会自动创建目录，请先确认目录存在。
 
-按 `Ctrl+C` 取消下载，未完成的文件会自动删除。
+选定图书后，详情查询与下载共用 **30 分钟**的时限。较大文件可用
+`--download-timeout 2h`，或设置 `ZLIB_DOWNLOAD_TIMEOUT=2h`；显式参数优先，
+`0` 表示不限制时间。该设置适用于 `download`、`search`、`history` 发起的下载，
+覆盖图书详情、文件链接解析、浏览器挑战、重试等待和文件传输。
+浏览或选择图书以及 SMTP 投递属于独立操作。
+
+```bash
+zlib download Gz31nyAV5E --download-timeout 2h
+zlib download Gz31nyAV5E --download-timeout 0  # 显式允许无限时下载
+```
+
+按 `Ctrl+C` 取消下载，非交互下载也会响应 `SIGTERM`。取消信号会停止详情查询、
+重试等待及传输，并清理未完成的文件。
 
 ### history
 
@@ -398,6 +410,7 @@ HTML 和 EAPI 都读取 `ZLIB_DOMAIN`。它的优先级高于 `~/.config/zlib/se
 | `ZLIB_THEME`            | 覆盖主题，无需修改配置文件                 |
 | `ZLIB_DOWNLOAD_DIR`     | 省略 `--dir` 时的默认下载目录              |
 | `ZLIB_DOWNLOAD_RETRIES` | 连接中断与 `502`/`503`/`504` 的重试次数    |
+| `ZLIB_DOWNLOAD_TIMEOUT` | 选定图书后查询与下载的时限，默认 `30m`，`0` 不限时 |
 
 `ZLIB_DOWNLOAD_RETRIES` 默认 `3`。
 
