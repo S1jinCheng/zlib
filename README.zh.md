@@ -214,7 +214,7 @@ zlib download Gz31nyAV5E --dir .      # 这一次改存到当前目录
 
 ```bash
 zlib download Gz31nyAV5E --download-timeout 2h
-zlib download Gz31nyAV5E --download-timeout 0  # 显式允许无限时下载
+zlib download Gz31nyAV5E --download-timeout 0
 ```
 
 按 `Ctrl+C` 取消下载，非交互下载也会响应 `SIGTERM`。取消信号会停止详情查询、

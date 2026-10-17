@@ -72,8 +72,6 @@ func (c *Client) FetchBook(id string) (Book, error) {
 	return c.FetchBookWithContext(context.Background(), id)
 }
 
-// FetchBookWithContext fetches book details with a caller-supplied deadline or
-// cancellation signal, including EAPI requests and HTML challenge retries.
 func (c *Client) FetchBookWithContext(ctx context.Context, id string) (Book, error) {
 	if !c.loggedIn {
 		return Book{}, ErrNotLoggedIn

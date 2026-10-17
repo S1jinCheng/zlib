@@ -228,7 +228,7 @@ transfer; browsing/selecting a book and SMTP delivery are separate operations.
 
 ```bash
 zlib download Gz31nyAV5E --download-timeout 2h
-zlib download Gz31nyAV5E --download-timeout 0  # explicitly allow unlimited time
+zlib download Gz31nyAV5E --download-timeout 0
 ```
 
 Press `Ctrl+C` to cancel.

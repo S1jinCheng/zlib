@@ -77,8 +77,6 @@ func runDownloadModel(m downloadModel) (downloadModel, error) {
 	}
 	result, err := tea.NewProgram(m).Run()
 	cancel()
-	// Wait for the worker's cleanup before the CLI exits. Once cancelled, its
-	// progress sends are interruptible and cannot depend on a running UI.
 	if dm, ok := result.(downloadModel); ok && dm.downloadCh != nil {
 		for range dm.downloadCh {
 		}
